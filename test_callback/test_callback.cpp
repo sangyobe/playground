@@ -18,5 +18,11 @@ int main(int argc, char *argv[]) {
       std::bind(adder, std::placeholders::_1, std::placeholders::_2);
   std::cout << MyAdder(1, 2) << std::endl;
   std::cout << MyAdder(5, 6) << std::endl;
+
+  Adder A;
+  auto MyAdder2 = std::bind(&Adder::adder, &A, 10, std::placeholders::_1);
+  std::cout << MyAdder2(5) << std::endl;
+  std::cout << MyAdder2(6) << std::endl;
+
   return 0;
 }
