@@ -10,11 +10,11 @@ int InitIMU() {
     return -1;
   printf("initializing...(1)\n");
   //    ebImu.SetPort(921600, 0, 0);
-  ebImu.SetPort(230400, 0, 0);
+  ebImu.SetPort(921600, 0, 0);
   printf("initializing...(2)\n");
   //    usleep(1000000);
   if (ebImu.Init())
-    return -1;
+     return -1;
 
   printf("initializing...(3)\n");
   return 0;

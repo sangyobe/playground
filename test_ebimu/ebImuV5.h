@@ -11,8 +11,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-#define BUFFERSIZE 255
+#define PRINT_DEBUG_MSG
 
+#define BUFFERSIZE 255
 typedef struct _EbImuV5Param {
   uint8_t baudRate = 8;    // 1:9600  ~5:115200 ~ 8:921600
   uint16_t outputRate = 1; // 0:polling, 1~1000 (1ms * outputRate)
@@ -43,6 +44,43 @@ typedef struct _EbImuV5Param {
   uint8_t avcAccl = 0; // Accl Active Vibration Cancellation Param
   uint8_t pons = 0;    // Power on start
   int packetLen = 0;
+
+#ifdef PRINT_DEBUG_MSG  
+  void DumpParams() {
+    fprintf(stdout, "----------------------------------------\n");
+    fprintf(stdout, "IMU Params                              \n");
+    fprintf(stdout, "----------------------------------------\n");
+    fprintf(stdout, "baudRate      = %d\n", baudRate);
+    fprintf(stdout, "outputRate    = %u\n", outputRate);
+    fprintf(stdout, "outputCode    = %u\n", outputCode);
+    fprintf(stdout, "outputForm    = %u\n", outputForm);
+    fprintf(stdout, "gyroOut       = %u\n", gyroOut);
+    fprintf(stdout, "acclOut       = %u\n", acclOut);
+    fprintf(stdout, "magnOut       = %u\n", magnOut);
+    fprintf(stdout, "distOut       = %u\n", distOut);
+    fprintf(stdout, "tempOut       = %u\n", tempOut);
+    fprintf(stdout, "timeOut       = %u\n", timeOut);
+    fprintf(stdout, "magnEnable    = %u\n", magnEnable);
+    fprintf(stdout, "gyroSens      = %u\n", gyroSens);
+    fprintf(stdout, "acclSens      = %u\n", acclSens);
+    fprintf(stdout, "gyroLpf       = %u\n", gyroLpf);
+    fprintf(stdout, "acclLpf       = %u\n", acclLpf);
+    fprintf(stdout, "acclFltFactor = %u\n", acclFltFactor);
+    fprintf(stdout, "magnFltFactor = %u\n", magnFltFactor);
+    fprintf(stdout, "raaLvl        = %.lf\n", raaLvl);
+    fprintf(stdout, "raaTime       = %u\n", raaTime);
+    fprintf(stdout, "rhaLvl        = %.lf\n", rhaLvl);
+    fprintf(stdout, "rhaTime       = %u\n", rhaTime);
+    fprintf(stdout, "agcEnable     = %u\n", agcEnable);
+    fprintf(stdout, "agcThreshold  = %.lf\n", agcThreshold);
+    fprintf(stdout, "agcDrift      = %.lf\n", agcDrift);
+    fprintf(stdout, "avcGyro       = %u\n", avcGyro);
+    fprintf(stdout, "avcAccl       = %u\n", avcAccl);
+    fprintf(stdout, "pons          = %u\n", pons);
+    fprintf(stdout, "packetLen     = %d\n", packetLen);
+    fprintf(stdout, "----------------------------------------\n");
+  }
+#endif
 } SEbImuV5Param;
 
 typedef struct _EbImuV5Data {
@@ -145,7 +183,7 @@ public:
 private:
   int m_fd; // file descriptor
   struct termios m_comTermio, m_oriTermio;
-  uint8_t m_rawData[255]; // 255
+  uint8_t m_rawData[BUFFERSIZE+1]; // 255
 
   SEbImuPacket m_packet;
   SEbImuV5Param m_param;
@@ -227,6 +265,7 @@ private:
   inline void ParsingAsciiPacket(char *packet);
   inline void ParsingHexPacket(uint8_t *packet);
   inline int8_t WriteCmd(const char *cmd, size_t size_byte);
+  inline void SetBlockRead(bool block, char* msg);
 };
 
 #endif // EBIMU_H

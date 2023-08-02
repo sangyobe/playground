@@ -138,7 +138,7 @@ int8_t CEbImuV5::Init() {
 
   printf("initializing...(2-1)\n");
 
-  m_blockRead = true;
+  SetBlockRead(true, "SerialComm. Init()");
 
   // usleep(10000);               // wait 5ms
   tcflush(m_fd, TCIFLUSH); // flush data received but not read
@@ -150,7 +150,7 @@ int8_t CEbImuV5::Init() {
   if (n_byte < 0) {
     fprintf(stderr, "SerialComm. Write() Error:%s(%d)", strerror(-n_byte),
             n_byte);
-    m_blockRead = false;
+    SetBlockRead(false, "SerialComm. Init()");
     return -1;
   }
 
@@ -203,6 +203,10 @@ int8_t CEbImuV5::Init() {
       rtn = -1;
   }
 
+#ifdef PRINT_DEBUG_MSG
+  m_param.DumpParams();
+#endif
+
   printf("initializing...(2-7)\n");
 
   if (Start())
@@ -210,7 +214,7 @@ int8_t CEbImuV5::Init() {
 
   printf("initializing...(2-8)\n");
 
-  m_blockRead = false;
+  SetBlockRead(false, "SerialComm. Init()");
 
   return rtn;
 }
@@ -1438,12 +1442,13 @@ void CEbImuV5::PacketAssembly_ADH(bool &isInitialized, uint8_t data) {
 int CEbImuV5::ReadRawData() {
   //    static int zero_cnt = 0;
 
+  //printf("m_blockRead = %d\n", (int)m_blockRead);
   if (m_blockRead)
-    return 0;
+     return 0;
 
   //    int rtn = read(m_fd, m_rawData, 16); //255
   int rtn = read(m_fd, m_rawData, BUFFERSIZE); // 255
-  printf("length = %d \n", rtn);
+  //printf("length = %d \n", rtn);
 
   //    if(rtn == 0){
   //        zero_cnt++;
@@ -1690,6 +1695,10 @@ int8_t CEbImuV5::ParsingConfig(char *config) {
   m_param.pons = strtol(ptrName + 5, &ptrEnd, 10);
   if (ptrEnd == nullptr)
     return -4;
+
+#ifdef PRINT_DEBUG_MSG
+    m_param.DumpParams();
+#endif
 
   return 0;
 }
@@ -1939,6 +1948,11 @@ void CEbImuV5::ParsingHexPacket(uint8_t *packet) {
   }
 }
 
+void CEbImuV5::SetBlockRead(bool block, char* msg) {
+  m_blockRead = block;
+  printf(">>> %s m_blockRead = %d\n", msg, (int)m_blockRead);
+}
+
 int8_t CEbImuV5::WriteCmd(const char *cmd, size_t size_byte) {
   int8_t rtn = 0;
   int n_byte = 0;
@@ -1947,14 +1961,16 @@ int8_t CEbImuV5::WriteCmd(const char *cmd, size_t size_byte) {
       0,
   };
 
-  m_blockRead = true;
+  printf("<<< WriteCmd\n");
+
+  SetBlockRead(true, "SerialComm. WriteCmd()");
 
   tcflush(m_fd, TCIFLUSH); // flush data received but not read
   n_byte = write(m_fd, cmd, size_byte);
   if (n_byte < 0) {
     fprintf(stderr, "SerialComm. Write() Error:%s(%d)", strerror(-n_byte),
             n_byte);
-    m_blockRead = false;
+    SetBlockRead(false, "SerialComm. WriteCmd()");
     return -1;
   }
 
@@ -1989,7 +2005,7 @@ int8_t CEbImuV5::WriteCmd(const char *cmd, size_t size_byte) {
     usleep(10000);
   }
 
-  m_blockRead = false;
+  SetBlockRead(false, "SerialComm. WriteCmd()");
 
   return rtn;
 }
