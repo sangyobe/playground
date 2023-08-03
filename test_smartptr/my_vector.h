@@ -9,6 +9,7 @@
 template <typename T> class MyVector {
 public:
   MyVector(T a, T b, T c) {
+    std::cout << "MyVector()" << std::endl;
     pa = std::make_unique<T>(a);
     pb = std::make_unique<T>(b);
     pc = std::make_unique<T>(c);
@@ -16,6 +17,7 @@ public:
     // *pb = b;
     // *pc = c;
   }
+  ~MyVector() { std::cout << "~MyVector()" << std::endl; }
   T GetX() { return *pa; }
   T GetY() { return *pb; }
   T GetZ() { return *pc; }
