@@ -1,3 +1,31 @@
+/**
+ * Copyright ART Team, HMC
+ * 
+ * ebImuV5 IMU sensor communicator
+ * 
+ * 센서에서 데이터를 읽기 위해서 다음 절차를 따름
+ * {
+ *    CEbImuV5 imu;
+ *    SEbImuV5Data& imu_data = imu.GetData();
+ *    imu.Open("/dev/ttyUSB0");   // open serial port
+ *    imu.SetPort(921600);        // set baudrate
+ *    imu.Init();
+ *    while (bRun) {
+ *        imu.ReadSome();
+ * 
+ *        __do_some_useful_job_using_imu_data__(imu_data);
+ * 
+ *    }
+ *    imu.Close();
+ * }
+ * 
+ * Note)
+ *  1. Ascii format 은 완벽히 구현(테스트)되지 않았음. Binary format(HEX) 만 사용함.
+ *  2. IMU 센서 초기화 후 SetOutputForm, SetGyroOut, SetAcclOut, SetMagnOut, 
+ *     SetDistOut, SetTempOut, SetTimeOut 함수로 sensor output 을 변경하게되면
+ *     하나의 패킷을 구성하는 payload length가 달라지므로 문제가 될 수 있음.
+ *     호출후 payload length를 다시 계산하려면 CalcPacketLen() 함수 호출해야 함.
+ */
 #ifndef EBIMU_H
 #define EBIMU_H
 
@@ -11,44 +39,45 @@
 #include <termios.h>
 #include <unistd.h>
 
-#define PRINT_DEBUG_MSG
+#define PRINT_IMU_CFG_MSG // whether display imu configuration data on screen or not
 
-#define BUFFERSIZE 255
+#define BUFFERSIZE 256          // maximum payload length of a imu data packet
+#define EB_SOP (0x55)
+
 typedef struct _EbImuV5Param {
   uint8_t baudRate = 8;    // 1:9600  ~5:115200 ~ 8:921600
-  uint16_t outputRate = 1; // 0:polling, 1~1000 (1ms * outputRate)
-  uint8_t outputCode = 2;  // ASCII(1) / HEX(2)
-  uint8_t outputForm = 1;  // Euler(1)/Quaternion(2)
+  uint16_t outputRate = 1;   // 0:polling, 1~1000 (1ms * outputRate)
+  uint8_t outputCode = 2;     // ASCII(1) / HEX(2)
+  uint8_t outputForm = 1;     // Euler(1)/Quaternion(2)
   uint8_t gyroOut = 1;
   uint8_t acclOut = 0;
   uint8_t magnOut = 0;
   uint8_t distOut = 0;
   uint8_t tempOut = 0;
   uint8_t timeOut = 1;
-  uint8_t magnEnable =
-      0; // magnetometer OFF(0), ON(1), ON2(2)(active anti-distortion)
-  uint8_t gyroSens = 5; // 1:125dps ~ 5:2000dps
-  uint8_t acclSens = 3; // 1:3g ~ 3:12g, 4:24g
-  uint8_t gyroLpf = 3;  // 0:12Hz ~ 3:47Hz ~ 7:532Hz
-  uint8_t acclLpf = 5;  // 0:1Hz ~ 5:40Hz ~ 9:280Hz
-  uint8_t acclFltFactor = 1;
+  uint8_t magnEnable = 0;     // magnetometer OFF(0), ON(1), ON2(2)(active anti-distortion)
+  uint8_t gyroSens = 5;       // 1:125dps ~ 5:2000dps
+  uint8_t acclSens = 4;       // 1:3g ~ 3:12g, 4:24g
+  uint8_t gyroLpf = 3;        // 0:12Hz ~ 3:47Hz ~ 7:532Hz
+  uint8_t acclLpf = 3;        // 0:1Hz ~ 5:40Hz ~ 9:280Hz
+  uint8_t acclFltFactor = 10;
   uint8_t magnFltFactor = 10;
-  double raaLvl = 0.2f;
-  uint32_t raaTime = 100; // 10000 ->100
-  double rhaLvl = 0.1f;
+  double raaLvl = 0.15f;
+  uint32_t raaTime = 10000; // 10000 ->100
+  double rhaLvl = 0.075f;
   uint32_t rhaTime = 10000;
-  uint8_t agcEnable = 1; // 1      // Auto Gyroscope Calibration Param
-  double agcThreshold = 0.8f;
-  double agcDrift = 0.5f;
-  uint8_t avcGyro = 0; // Gyro Active Vibration Cancellation Param
-  uint8_t avcAccl = 0; // Accl Active Vibration Cancellation Param
-  uint8_t pons = 0;    // Power on start
+  uint8_t agcEnable = 1;//1      // Auto Gyroscope Calibration Param
+  double agcThreshold = 0.5f;
+  double agcDrift = 0.3f;
+  uint8_t avcGyro = 0;        // Gyro Active Vibration Cancellation Param
+  uint8_t avcAccl = 0;        // Accl Active Vibration Cancellation Param
+  uint8_t pons = 1;           // Power on start
   int packetLen = 0;
 
-#ifdef PRINT_DEBUG_MSG  
-  void DumpParams() {
+#ifdef PRINT_IMU_CFG_MSG  
+  void DumpParams(const char* header) {
     fprintf(stdout, "----------------------------------------\n");
-    fprintf(stdout, "IMU Params                              \n");
+    fprintf(stdout, "IMU Params (%s)\n", header);
     fprintf(stdout, "----------------------------------------\n");
     fprintf(stdout, "baudRate      = %d\n", baudRate);
     fprintf(stdout, "outputRate    = %u\n", outputRate);
@@ -83,37 +112,24 @@ typedef struct _EbImuV5Param {
 #endif
 } SEbImuV5Param;
 
-typedef struct _EbImuV5Data {
-  double eulerZYX_rad[3] = {
-      0,
-  }; // z, y, x
-  double quat[4] = {
-      0,
-  }; // w, x, y, z
-  double gyro_rps[3] = {
-      0,
-  };
-  double accl_G[3] = {
-      0,
-  }; // 1G is 9.8m/(s2)
-  double velo_mps[3] = {
-      0,
-  };
-  double magn_uT[3] = {
-      0,
-  }; // xy:+/-1300uT, z:+/-2500uT
-  double dist_m[3] = {
-      0,
-  };
+typedef struct _EbImuV5Data
+{
+  double eulerZYX_rad[3] = {0,}; // z, y, x
+  double quat[4] = {0,};      // w, x, y, z
+  double gyro_rps[3] = {0,};
+  double accl_G[3] = {0,};     // 1G is 9.8m/(s2)
+  double velo_mps[3] = {0,};
+  double magn_uT[3] = {0,};   // xy:+/-1300uT, z:+/-2500uT
+  double dist_m[3] = {0,};
   double temp_C = 0;
   uint16_t timeStamp = 0;
   uint16_t chkSum = 0;
 } SEbImuV5Data;
 
+
 typedef struct _EbImuRxPacket {
   int idx = 0;
-  uint8_t buf[18];
-  //    uint8_t buf[BUFFERSIZE];
+  uint8_t buf[BUFFERSIZE];
 } SEbImuPacket;
 
 class CEbImuV5 {
@@ -183,7 +199,6 @@ public:
 private:
   int m_fd; // file descriptor
   struct termios m_comTermio, m_oriTermio;
-  uint8_t m_rawData[BUFFERSIZE+1]; // 255
 
   SEbImuPacket m_packet;
   SEbImuV5Param m_param;
@@ -192,7 +207,8 @@ private:
   bool m_bCalib = false;
   bool m_blockRead = false;
 
-  int m_imuStep;
+  int m_imuStep = 0;
+  int m_chkSumErrCount = 0;
 
 public:
   explicit CEbImuV5();
@@ -203,7 +219,7 @@ public:
                const uint8_t minLen = 0);
   bool IsOpen() const;
   void Close();
-  //    int Read();
+  int ReadSome(); // Read some data from serial buffer and parse it if possible
   int Write(const void *buf, size_t size_byte);
   int8_t Init(); // Read parameter & set default param
 
@@ -254,18 +270,15 @@ public:
   SEbImuV5Data &GetData();
   int GetPacketLen();
   int8_t CalcPacketLen();
-  //    void PacketAssembly(uint8_t data);
-  void PacketAssembly_ADH(bool &isInitialized, uint8_t data);
-  int ReadRawData();
-
-  int chkSumErr = 0;
 
 private:
+  void PacketAssembly(uint8_t data);
+  void PacketAssembly_ADH(bool &isInitialized, uint8_t data);
   int8_t ParsingConfig(char *config);
   inline void ParsingAsciiPacket(char *packet);
   inline void ParsingHexPacket(uint8_t *packet);
   inline int8_t WriteCmd(const char *cmd, size_t size_byte);
-  inline void SetBlockRead(bool block, char* msg);
+  inline void SetBlockRead(bool block, const char* msg);
 };
 
 #endif // EBIMU_H

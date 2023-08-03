@@ -10,99 +10,79 @@
 
 CEbImuV5::CEbImuV5() {
   m_fd = -1;
-  memset(m_rawData, 0, BUFFERSIZE); // 255
 }
 
 CEbImuV5::~CEbImuV5() {}
 
 int8_t CEbImuV5::Open(const char *devFile) {
-  // Read/Write | Not Controlling terminal(prevent Ctrl-C Signal) | Non-block
-  // for open()
+  // Read/Write | Not Controlling terminal(prevent Ctrl-C Signal) | Non-block for open()
   m_fd = open(devFile, O_RDWR | O_NOCTTY | O_NONBLOCK);
   if (m_fd < 0) {
     fprintf(stderr, "SerialComm Open() Error: %s", devFile);
     return -1;
   }
 
+  // additional initialization
+  m_chkSumErrCount = 0;
+
   return 0;
 }
 
-void CEbImuV5::SetPort(const uint32_t baudrate, const uint8_t timeout_decisec,
-                       const uint8_t minLen) {
-  //    struct termios oldtio, newtio;
-  //    m_comTermio
-  //    m_oriTermio
+void CEbImuV5::SetPort(const uint32_t baudrate, const uint8_t timeout_decisec, const uint8_t minLen)
+{
+//    struct termios oldtio, newtio;
+//    m_comTermio
+//    m_oriTermio
 
-  //    tcgetattr(m_fd,&m_oriTermio);
-  //    m_comTermio=m_oriTermio;
+//    tcgetattr(m_fd,&m_oriTermio);
+//    m_comTermio=m_oriTermio;
 
   tcgetattr(m_fd, &m_oriTermio); // save current serial port settings
-  memset(&m_comTermio, 0,
-         sizeof(m_comTermio)); // clear struct for new port settings
+  memset(&m_comTermio, 0, sizeof(m_comTermio)); // clear struct for new port settings
 
   // control mode flags
-  switch (baudrate) {
-  case 9600:
-    m_comTermio.c_cflag = B9600;
-    break;
-  case 19200:
-    m_comTermio.c_cflag = B19200;
-    break;
-  case 38400:
-    m_comTermio.c_cflag = B38400;
-    break;
-  case 57600:
-    m_comTermio.c_cflag = B57600;
-    break;
-  case 115200:
-    m_comTermio.c_cflag = B115200;
-    break;
-  case 230400:
-    m_comTermio.c_cflag = B230400;
-    break;
-  case 460800:
-    m_comTermio.c_cflag = B460800;
-    break;
+  switch(baudrate)
+  {
+  case 9600:   m_comTermio.c_cflag = B9600; break;
+  case 19200:  m_comTermio.c_cflag = B19200; break;
+  case 38400:  m_comTermio.c_cflag = B38400; break;
+  case 57600:  m_comTermio.c_cflag = B57600; break;
+  case 115200: m_comTermio.c_cflag = B115200; break;
+  case 230400: m_comTermio.c_cflag = B230400; break;
+  case 460800: m_comTermio.c_cflag = B460800; break;
   case 921600:
-  default:
-    m_comTermio.c_cflag = B921600;
-    break;
+  default: m_comTermio.c_cflag = B921600; break;
   }
 
-  m_comTermio.c_cflag |= CS8;    // 8N1 (8bit, no parity, 1stopbit)
-  m_comTermio.c_cflag |= CLOCAL; // Local connection, Ignore modem control lines
-  m_comTermio.c_cflag |= CREAD;  // Enable receiver, transmit is default
+  m_comTermio.c_cflag |= CS8;     // 8N1 (8bit, no parity, 1stopbit)
+  m_comTermio.c_cflag |= CLOCAL;  // Local connection, Ignore modem control lines
+  m_comTermio.c_cflag |= CREAD;   // Enable receiver, transmit is default
 
   // input mode flags
-  m_comTermio.c_iflag = IGNPAR; // Ignore faming errors and parity errors
+  m_comTermio.c_iflag = IGNPAR;   // Ignore faming errors and parity errors
 
   // output mode flags
   m_comTermio.c_oflag = 0;
 
   // local mode flags
-  m_comTermio.c_lflag = 0; // non-canonical mode, disable all echo functionality
-                           // and don't send signals to calling program
+  m_comTermio.c_lflag = 0; // non-canonical mode, disable all echo functionality and don't send signals to calling program
 
   // control characters
-  // VMIN = 0, VTIME = 0, non block, if data is available, read() returns
-  // immediately VMIN > 0, VTIME = 0, VMIN is the minimum num of char, VTIME(0)
-  // mean infinitly wait VMIN = 0, VTIME > 0, timer is started when read() is
-  // called. read() returns either when at least one byte of data is available,
-  // or when the timer expires. VMIN > 0, VTIME > 0,
+  // VMIN = 0, VTIME = 0, non block, if data is available, read() returns immediately
+  // VMIN > 0, VTIME = 0, VMIN is the minimum num of char, VTIME(0) mean infinitly wait
+  // VMIN = 0, VTIME > 0, timer is started when read() is called. read() returns either when at least one byte of data is available, or when the timer expires.
+  // VMIN > 0, VTIME > 0,
 
-  m_comTermio.c_cc[VTIME] =
-      timeout_decisec; // Wait infinitly, Timeout in deciseconds for
-                       // noncanonical read
-  m_comTermio.c_cc[VMIN] =
-      minLen; // Minimum number of characters for non-canonical read
+  m_comTermio.c_cc[VTIME] = timeout_decisec;  // Wait infinitly, Timeout in deciseconds for noncanonical read
+  m_comTermio.c_cc[VMIN] = minLen;            // Minimum number of characters for non-canonical read
 
   tcflush(m_fd, TCIFLUSH);                // flush data received but not read
   tcsetattr(m_fd, TCSANOW, &m_comTermio); // set attribute
 }
 
+
 bool CEbImuV5::IsOpen() const {
-  if (m_fd < 0)
-    return false;
+  if (m_fd < 0) return false;
 
   return true;
 }
@@ -116,40 +96,30 @@ void CEbImuV5::Close() {
 }
 
 int8_t CEbImuV5::Init() {
-  printf("initializing...(2-0)\n");
   if (m_fd < 0)
     return -1;
 
   int8_t rtn = 0;
   int n_byte = 0;
   int rxSize = 0;
-  char rxData[4095] = {
-      0,
-  };
+  char rxBuf[BUFFERSIZE];
+  char rxData[4095] = {0, };
   char txData[6];
-
-  // para init
-  chkSumErr = 0;
-
-  sprintf(txData, "<cfg>");
 
   if (Stop())
     return -1;
 
-  printf("initializing...(2-1)\n");
+  sprintf(txData, "<cfg>");
 
   SetBlockRead(true, "SerialComm. Init()");
 
   // usleep(10000);               // wait 5ms
   tcflush(m_fd, TCIFLUSH); // flush data received but not read
-  printf("initializing...(2-2)\n");
 
   n_byte = write(m_fd, txData, strlen(txData));
-  printf("initializing...(2-3)\n");
 
   if (n_byte < 0) {
-    fprintf(stderr, "SerialComm. Write() Error:%s(%d)", strerror(-n_byte),
-            n_byte);
+    fprintf(stderr, "SerialComm. Write() Error:%s(%d)", strerror(-n_byte), n_byte);
     SetBlockRead(false, "SerialComm. Init()");
     return -1;
   }
@@ -157,10 +127,12 @@ int8_t CEbImuV5::Init() {
   for (int i = 0; i < 500; i++) {
     usleep(10000);
 
-    n_byte = read(m_fd, m_rawData, BUFFERSIZE); // 255
+    // 데이터 조작시 '\0'를 넣을 자리가 필요해서
+    // (BUFFERSIZE - 1) 만큼만 읽는다.
+    n_byte = read(m_fd, (void*)rxBuf, BUFFERSIZE-1); 
 
     if (n_byte > 0) {
-      m_rawData[n_byte] = 0;
+      rxBuf[n_byte] = 0;
       rxSize += n_byte;
 
       if (rxSize >= 4095) {
@@ -168,7 +140,7 @@ int8_t CEbImuV5::Init() {
         rxSize = n_byte;
       }
 
-      strcat(rxData, (char *)m_rawData);
+      strcat(rxData, rxBuf);
 
       if (strchr(rxData, '>') != nullptr) {
         rtn = 0;
@@ -181,21 +153,22 @@ int8_t CEbImuV5::Init() {
       break;
     }
   }
-  printf("initializing...(2-4)\n");
 
   if (!rtn) {
     // Parsing Configuration param
     if (ParsingConfig(rxData))
       rtn = -1;
+
+#ifdef PRINT_IMU_CFG_MSG
+    if(!rtn)
+        m_param.DumpParams("<cfg> returns");
+#endif
   }
 
-  printf("initializing...(2-5)\n");
   sprintf(txData, ">");
 
   if (WriteCmd(txData, strlen(txData)))
     rtn = -1;
-
-  printf("initializing...(2-6)\n");
 
   if (!rtn) {
     // Set Default Parameter & Calc. Packet length
@@ -203,16 +176,12 @@ int8_t CEbImuV5::Init() {
       rtn = -1;
   }
 
-#ifdef PRINT_DEBUG_MSG
-  m_param.DumpParams();
+#ifdef PRINT_IMU_CFG_MSG
+  m_param.DumpParams("after set param");
 #endif
-
-  printf("initializing...(2-7)\n");
 
   if (Start())
     rtn = -1;
-
-  printf("initializing...(2-8)\n");
 
   SetBlockRead(false, "SerialComm. Init()");
 
@@ -304,247 +273,232 @@ int8_t CEbImuV5::FactoryReset() {
   return 0;
 }
 
-// int8_t CEbImuV5::ReadParam()
-//{
-//     if (m_fd < 0) return -1;
-//
-//     int8_t rtn = 0;
-//     int n_byte = 0;
-//     int rxSize = 0;
-//     char rxData[4095] = {0,};
-//     char txData[6];
-//
-//     sprintf(txData, "<cfg>");
-//
-//     if (Stop()) return -1;
-//
-//     m_blockRead = true;
-//
-//     //usleep(10000);               // wait 5ms
-//     tcflush(m_fd, TCIFLUSH);    // flush data received but not read
-//     n_byte = write(m_fd, txData, strlen(txData));
-//
-//     if (n_byte < 0)
-//     {
-//         fprintf(stderr, "SerialComm. Write() Error:%s(%d)",
-//         strerror(-n_byte), n_byte); m_blockRead = false; return -1;
-//     }
-//
-//     for (int i=0; i<500; i++)
-//     {
-//         usleep(10000);
-//
-//         n_byte = read(m_fd, m_rawData, BUFFERSIZE); //255
-//
-//         if (n_byte > 0)
-//         {
-//             m_rawData[n_byte] = 0;
-//             rxSize += n_byte;
-//
-//             if (rxSize >= 4095)
-//             {
-//                 rxData[0] = 0;
-//                 rxSize = n_byte;
-//             }
-//
-//             strcat(rxData, (char*)m_rawData);
-//
-//             if (strchr(rxData, '>') != nullptr)
-//             {
-//                 rtn = 0;
-//                 break;
-//             }
-//         }
-//         else if (n_byte < 0)
-//         {
-//             fprintf(stderr, "SerialComm. Read() Error:%s(%d)",
-//             strerror(-n_byte), n_byte); rtn = -1; break;
-//         }
-//     }
-//
-//     if (!rtn)
-//     {
-//         // Parsing Configuration param
-//         if (ParsingConfig(rxData)) rtn = -1;
-//     }
-//
-//     if (!rtn)
-//     {
-//         if (CalcPacketLen()) rtn = -1;
-//     }
-//
-//     sprintf(txData, ">");
-//
-//     if (WriteCmd(txData, strlen(txData))) rtn = -1;
-//
-//     if (Start()) rtn = -1;
-//
-//     m_blockRead = false;
-//
-//     return rtn;
-// }
+int8_t CEbImuV5::ReadParam()
+{
+    if (m_fd < 0) return -1;
+
+    int8_t rtn = 0;
+    int n_byte = 0;
+    int rxSize = 0;
+    char rxBuf[BUFFERSIZE];
+    char rxData[4095] = {0,};
+    char txData[6];
+
+    sprintf(txData, "<cfg>");
+
+    if (Stop()) return -1;
+
+    m_blockRead = true;
+
+    //usleep(10000);               // wait 5ms
+    tcflush(m_fd, TCIFLUSH);    // flush data received but not read
+    n_byte = write(m_fd, txData, strlen(txData));
+
+    if (n_byte < 0)
+    {
+        fprintf(stderr, "SerialComm. Write() Error:%s(%d)",
+        strerror(-n_byte), n_byte); m_blockRead = false; return -1;
+    }
+
+    for (int i=0; i<500; i++)
+    {
+        usleep(10000);
+
+        n_byte = read(m_fd, rxBuf, BUFFERSIZE-1); //255
+
+        if (n_byte > 0)
+        {
+            rxBuf[n_byte] = 0;
+            rxSize += n_byte;
+
+            if (rxSize >= 4095)
+            {
+                rxData[0] = 0;
+                rxSize = n_byte;
+            }
+
+            strcat(rxData, rxBuf);
+
+            if (strchr(rxData, '>') != nullptr)
+            {
+                rtn = 0;
+                break;
+            }
+        }
+        else if (n_byte < 0)
+        {
+            fprintf(stderr, "SerialComm. Read() Error:%s(%d)",
+            strerror(-n_byte), n_byte); rtn = -1; break;
+        }
+    }
+
+    if (!rtn)
+    {
+        // Parsing Configuration param
+        if (ParsingConfig(rxData)) rtn = -1;
+    }
+
+    if (!rtn)
+    {
+        if (CalcPacketLen()) rtn = -1;
+    }
+
+    sprintf(txData, ">");
+
+    if (WriteCmd(txData, strlen(txData))) rtn = -1;
+
+    if (Start()) rtn = -1;
+
+    m_blockRead = false;
+
+    return rtn;
+}
 
 int8_t CEbImuV5::SetDefaultParam() {
   int8_t rtn = 0;
+  SEbImuV5Param defaultParam;
 
-  if (m_param.outputRate != 1) { // 1ms
-    rtn = SetOutputRate(1);
+  if (m_param.outputRate != defaultParam.outputRate) { // 1ms
+    rtn = SetOutputRate(defaultParam.outputRate);
     if (rtn)
       return rtn;
   }
 
-  if (m_param.outputCode != 2) { // Hex
-    rtn = SetOutputCode(2);
+  if (m_param.outputCode != defaultParam.outputCode) { // Hex
+    rtn = SetOutputCode(defaultParam.outputCode);
     if (rtn)
       return rtn;
   }
 
-  if (m_param.outputForm != 1) { // Euler
-    rtn = SetOutputForm(1);
+  if (m_param.outputForm != defaultParam.outputForm) { // Euler
+    rtn = SetOutputForm(defaultParam.outputForm);
     if (rtn)
       return rtn;
   }
 
-  if (m_param.gyroOut != 1) {
-    rtn = SetGyroOut(1);
+  if (m_param.gyroOut != defaultParam.gyroOut) {
+    rtn = SetGyroOut(defaultParam.gyroOut);
     if (rtn)
       return rtn;
   }
 
-  //    if (m_param.acclOut != 1) //ADH: Global acc
-  //    {
-  //        rtn = SetAcclOut(1);
-  //        if (rtn) return rtn;
-  //    }
-  if (m_param.acclOut != 0) // ADH: Local acc
+  if (m_param.acclOut != defaultParam.acclOut)
   {
-    rtn = SetAcclOut(0);
-    if (rtn)
-      return rtn;
-  }
-  //    if (m_param.acclOut != 2) //ADH: Local acc
-  //    {
-  //        rtn = SetAcclOut(2);
-  //        if (rtn) return rtn;
-  //    }
-  //    if (m_param.acclOut != 3) //ADH: Local acc
-  //    {
-  //        rtn = SetAcclOut(3);
-  //        if (rtn) return rtn;
-  //    }
-
-  if (m_param.magnOut != 0) {
-    rtn = SetMagnOut(0);
+    rtn = SetAcclOut(defaultParam.acclOut);
     if (rtn)
       return rtn;
   }
 
-  if (m_param.distOut != 0) {
-    rtn = SetDistOut(0);
+  if (m_param.magnOut != defaultParam.magnOut) {
+    rtn = SetMagnOut(defaultParam.magnOut);
     if (rtn)
       return rtn;
   }
 
-  if (m_param.tempOut != 0) {
-    rtn = SetTempOut(0);
+  if (m_param.distOut != defaultParam.distOut) {
+    rtn = SetDistOut(defaultParam.distOut);
     if (rtn)
       return rtn;
   }
 
-  if (m_param.timeOut != 1) // 0->1
+  if (m_param.tempOut != defaultParam.tempOut) {
+    rtn = SetTempOut(defaultParam.tempOut);
+    if (rtn)
+      return rtn;
+  }
+
+  if (m_param.timeOut != defaultParam.timeOut) {
+    rtn = SetTimeOut(defaultParam.timeOut);
+    if (rtn)
+      return rtn;
+  }
+
+  if (m_param.magnEnable != defaultParam.magnEnable) {
+    rtn = SetMagnEnable(defaultParam.magnEnable);
+    if (rtn)
+      return rtn;
+  }
+
+  if (m_param.gyroSens != defaultParam.gyroSens)
   {
-    rtn = SetTimeOut(1);
-    if (rtn)
-      return rtn;
+      rtn = SetGyroSens(defaultParam.gyroSens);
+      if (rtn) return rtn;
   }
 
-  if (m_param.magnEnable != 0) // 2->0
+  if (m_param.acclSens != defaultParam.acclSens)
   {
-    rtn = SetMagnEnable(0);
+      rtn = SetAcclSens(defaultParam.acclSens);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.gyroLpf != defaultParam.gyroLpf)
+  {
+      rtn = SetGyroLPF(defaultParam.gyroLpf);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.acclLpf != defaultParam.acclLpf)
+  {
+      rtn = SetAcclLPF(defaultParam.acclLpf);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.acclFltFactor != defaultParam.acclFltFactor)
+  {
+      rtn = SetAcclFltFactor(defaultParam.acclFltFactor);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.magnFltFactor != defaultParam.magnFltFactor)
+  {
+      rtn = SetMagnFltFactor(defaultParam.magnFltFactor);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.raaLvl != defaultParam.raaLvl)
+  {
+      rtn = SetRaaLevel(defaultParam.raaLvl);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.raaTime != defaultParam.raaTime)
+  {
+      rtn = SetRaaTimeout(defaultParam.raaTime);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.agcEnable != defaultParam.agcEnable) {
+    rtn = SetAutoGyroCalib(defaultParam.agcEnable);
     if (rtn)
       return rtn;
   }
 
-  //    if (m_param.gyroSens != 5)
-  //    {
-  //        rtn = SetGyroSens(5);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.acclSens != 3)
-  //    {
-  //        rtn = SetAcclSens(3);
-  //        if (rtn) return rtn;
-  //    }
-
-  //    if (m_param.gyroLpf != 5)
-  //    {
-  //        rtn = SetGyroLPF(5);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.acclLpf != 7)
-  //    {
-  //        rtn = SetAcclLPF(7);
-  //        if (rtn) return rtn;
-  //    }
-
-  //    if (m_param.acclFltFactor != 20) //10 ->1
-  //    {
-  //        rtn = SetAcclFltFactor(20);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.magnFltFactor != 10)
-  //    {
-  //        rtn = SetMagnFltFactor(10);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.raaLvl != 0.01) // 0.2 -> 0.01
-  //    {
-  //        rtn = SetRaaLevel(0.01);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.raaTime != 10000) // 10000 -> 1000
-  //    {
-  //        rtn = SetRaaTimeout(10000);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  if (m_param.agcEnable != 1) {
-    rtn = SetAutoGyroCalib(1);
-    if (rtn)
-      return rtn;
+  if (m_param.agcThreshold != defaultParam.agcThreshold)
+  {
+      rtn = SetAutoGyroCalibThreshold(defaultParam.agcThreshold);
+      if (rtn) return rtn;
   }
-  //
-  //    if (m_param.agcThreshold != 0.8f)
-  //    {
-  //        rtn = SetAutoGyroCalibThreshold(0.8f);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.agcDrift != 0.5f)
-  //    {
-  //        rtn = SetAutoGyroCalibDrift(0.5f);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.avcGyro != 0)
-  //    {
-  //        rtn = SetAvcGyro(0);
-  //        if (rtn) return rtn;
-  //    }
-  //
-  //    if (m_param.avcAccl != 0)
-  //    {
-  //        rtn = SetAvcAccl(0);
-  //        if (rtn) return rtn;
-  //    }
 
-  if (m_param.pons != 1) {
-    rtn = PowerOnStart(true);
+  if (m_param.agcDrift != defaultParam.agcDrift)
+  {
+      rtn = SetAutoGyroCalibDrift(defaultParam.agcDrift);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.avcGyro != defaultParam.avcGyro)
+  {
+      rtn = SetAvcGyro(defaultParam.avcGyro);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.avcAccl != defaultParam.avcAccl)
+  {
+      rtn = SetAvcAccl(defaultParam.avcAccl);
+      if (rtn) return rtn;
+  }
+
+  if (m_param.pons != defaultParam.pons) {
+    rtn = PowerOnStart((defaultParam.pons == 1 ? true : false));
   }
 
   if (CalcPacketLen())
@@ -1198,7 +1152,7 @@ SEbImuV5Data &CEbImuV5::GetData() { return m_data; }
 int CEbImuV5::GetPacketLen() { return m_param.packetLen; }
 
 int8_t CEbImuV5::CalcPacketLen() {
-  m_param.packetLen = 4; // SOP(0x5555, 2byte) + CHK(2byte)
+  m_param.packetLen = 4; // SOP(2byte) + CHK(2byte)
 
   if (m_param.outputForm == Quat) {
     m_param.packetLen += 8; // 4 * 2;
@@ -1230,15 +1184,13 @@ int8_t CEbImuV5::CalcPacketLen() {
     m_param.packetLen += 2;
   }
 
-  //    --m_param.packetLen; // for index count
-
-  //    printf("\n\n\n\n\n\n\n m_param.packetLen = %d\n",m_param.packetLen);
-
   if (m_param.packetLen < 0)
     return -1;
 
   return 0;
 }
+
+
 void CEbImuV5::PacketAssembly_ADH(bool &isInitialized, uint8_t data) {
   static uint8_t prevData = 0;
 
@@ -1253,9 +1205,9 @@ void CEbImuV5::PacketAssembly_ADH(bool &isInitialized, uint8_t data) {
 
   switch (m_imuStep) {
   case 0:
-    if (data == 0x55 && prevData == 0x55) {
-      m_packet.buf[0] = 0x55;
-      m_packet.buf[1] = 0x55;
+    if (data == EB_SOP && prevData == EB_SOP) {
+      m_packet.buf[0] = EB_SOP;
+      m_packet.buf[1] = EB_SOP;
       prevData = 0;
       m_packet.idx = 2;
       m_imuStep = 1;
@@ -1282,8 +1234,8 @@ void CEbImuV5::PacketAssembly_ADH(bool &isInitialized, uint8_t data) {
       if (chkSum2 == chkSum1) {
         ParsingHexPacket(m_packet.buf);
       } else {
-        chkSumErr++;
-        printf("checksum error! chkSumErr count = %d \n", chkSumErr);
+        m_chkSumErrCount++;
+        printf("checksum error! chkSumErr count = %d \n", m_chkSumErrCount);
       }
       memset(m_packet.buf, 0, sizeof(m_packet.buf)); // clear buffer
       prevData = 0;
@@ -1309,10 +1261,10 @@ void CEbImuV5::PacketAssembly_ADH(bool &isInitialized, uint8_t data) {
 //
 //     if (!m_bSOP)
 //     {
-//         if (data == 0x55 && prevData == 0x55)
+//         if (data == EB_SOP && prevData == EB_SOP)
 //         {
-//             m_packet.buf[0] = 0x55;
-//             m_packet.buf[1] = 0x55;
+//             m_packet.buf[0] = EB_SOP;
+//             m_packet.buf[1] = EB_SOP;
 //             prevData = 0;
 //             m_packet.idx = 2;
 //             m_bSOP = true;
@@ -1348,8 +1300,8 @@ void CEbImuV5::PacketAssembly_ADH(bool &isInitialized, uint8_t data) {
 //                ParsingHexPacket(m_packet.buf);
 //            }
 //            else{
-//                chkSumErr++;
-////                printf("checksum error! chkSumErr count = %d \n",chkSumErr);
+//                m_chkSumErrCount++;
+////                printf("checksum error! chkSumErr count = %d \n", m_chkSumErrCount);
 //
 //            }
 //            memset(m_packet.buf, 0, sizeof(m_packet.buf)); // clear buffer
@@ -1360,137 +1312,104 @@ void CEbImuV5::PacketAssembly_ADH(bool &isInitialized, uint8_t data) {
 //    }
 //}
 
-// int8_t CEbImuV5::PacketAssembly(const uint8_t &data)
-//{
-//     int8_t rtn = 0;
-//     uint16_t chkSum = 0;
-//     static bool bSOP = false;
-//
-//     switch (m_param.outputCode)
-//     {
-//     case Ascii:
-//         if (data == '*')
-//         {
-//             m_packet.idx = 0;
-//             m_packet.buf[m_packet.idx++] = data;
-//         }
-//         else if (data == '\n' && m_packet.buf[0] == '*')
-//         {
-//             m_packet.buf[m_packet.idx++] = data;
-//             ParsingAsciiPacket((char*)m_packet.buf);
-//             memset(m_packet.buf, 0, sizeof(m_packet.buf));
-//             rtn = 1;
-//         }
-//         else
-//         {
-//             m_packet.buf[m_packet.idx++] = data;
-//         }
-//         break;
-//     case Hex:
-//         if (data == 0x55 && !bSOP)
-//         {
-////            printf("[1]\n");
-//            if (m_packet.idx > 0 && m_packet.buf[m_packet.idx - 1] == 0x55)
-//            {
-//                m_packet.buf[0] = data;
-//                m_packet.buf[1] = data;
-//                m_packet.idx = 2;
-//                bSOP = true;
-//            }
-//            else
-//            {
-//                m_packet.buf[m_packet.idx++] = data;
-//                bSOP = false;
-//            }
-//        }
-//        else if (bSOP && (m_param.packetLen == m_packet.idx))
-//        {
-////            printf("[2]\n");
-//            m_packet.buf[m_packet.idx++] = data;
-//
-//            /* CheckSum*/
-//            m_data.chkSum = (uint8_t)m_packet.buf[m_packet.idx - 2] << 8 |
-//            (uint8_t)m_packet.buf[m_packet.idx - 1];
-//
-//            for (int i = 0; i<m_packet.idx-2; i++)
-//                chkSum += (uint8_t)m_packet.buf[i];
-//
-//            if (chkSum == m_data.chkSum)
-//            {
-//                ParsingHexPacket(m_packet.buf);
-//                rtn = 1;
-//            }
-////            else{
-////                printf("checksum error!\n");
-////            }
-//            memset(m_packet.buf, 0, sizeof(m_packet.buf));
-//            bSOP = false;
-//        }
-//        else
-//        {
-////            printf("[3]\n");
-//            m_packet.buf[m_packet.idx++] = data;
-//        }
-//        break;
-//    }
-//
-//    if (m_packet.idx >= 18) m_packet.idx = 0; //255
-//
-//    return rtn;
-//}
+void CEbImuV5::PacketAssembly(uint8_t data)
+{
+    //int8_t rtn = 0;
+    uint16_t chkSum_calc = 0;
+    uint16_t chkSum_recv = 0;
+    static bool bSOP = false;
 
-int CEbImuV5::ReadRawData() {
-  //    static int zero_cnt = 0;
+    switch (m_param.outputCode)
+    {
+    case Ascii:
+        if (data == '*')
+        {
+            m_packet.idx = 0;
+            m_packet.buf[m_packet.idx++] = data;
+        }
+        else if (data == '\n' && m_packet.buf[0] == '*')
+        {
+            m_packet.buf[m_packet.idx++] = data;
+            ParsingAsciiPacket((char*)m_packet.buf);
+            //memset(m_packet.buf, 0, sizeof(m_packet.buf));
+            m_packet.idx = 0; // invalidate packet buffer
+            //rtn = 1;
+        }
+        else
+        {
+            m_packet.buf[m_packet.idx++] = data;
+        }
+        break;
+    case Hex:
+        if (!bSOP) {
+          if (data == EB_SOP)
+          {
+            if (m_packet.idx == 0) {
+              m_packet.buf[m_packet.idx++] = data;
+            }
+            else if (m_packet.idx == 1) {
+              m_packet.buf[m_packet.idx++] = data;
+              bSOP = true;
+            }
+            else {
+              m_packet.idx = 0; // invalidate packet buffer (something is wrong!)
+            }
+          }
+          else {
+            m_packet.idx = 0; // invalidate packet buffer
+          }
+        }
+        else {
+          m_packet.buf[m_packet.idx++] = data;
 
-  //printf("m_blockRead = %d\n", (int)m_blockRead);
+          if (m_param.packetLen == m_packet.idx) {
+            chkSum_recv = (uint8_t)m_packet.buf[m_packet.idx - 2] << 8 |
+                          (uint8_t)m_packet.buf[m_packet.idx - 1];
+
+            for (int i = 0; i<m_packet.idx-2; i++)
+               chkSum_calc += (uint8_t)m_packet.buf[i];
+
+            if (chkSum_calc != chkSum_recv) {
+              m_chkSumErrCount++;
+              fprintf(stderr, "checksum error! chkSumErr count = %d \n", m_chkSumErrCount);
+            }
+            else {
+              ParsingHexPacket(m_packet.buf);
+              m_data.chkSum = chkSum_recv;
+
+              m_packet.idx = 0;
+              //memset(m_packet.buf, 0, sizeof(m_packet.buf));
+              bSOP = false;
+
+              //rtn = 1;
+            }
+          }
+
+          if (m_packet.idx >= BUFFERSIZE) 
+            m_packet.idx = 0;
+
+        }
+        break;
+    }
+
+  //return rtn;
+}
+
+int CEbImuV5::ReadSome() {
   if (m_blockRead)
      return 0;
 
-  //    int rtn = read(m_fd, m_rawData, 16); //255
-  int rtn = read(m_fd, m_rawData, BUFFERSIZE); // 255
-  //printf("length = %d \n", rtn);
+  char rxBuf[BUFFERSIZE];
 
-  //    if(rtn == 0){
-  //        zero_cnt++;
-  //        printf("zero cnt = %d\n",zero_cnt);
-  //    }
-
-  //    if (rtn != 16)
-  //    {
-  //        static int rtnCnt = 0;
-  //        printf("\n\n\n\n\n\n [WALRNIG] rtn = %d, rtnCnt =
-  //        %d\n\n\n\n\n",rtn,rtnCnt); rtnCnt++;
-  //    }
-
-  //    uint8_t rawData[1];
-  //    int rtn = 0;
-  //    bool isInitialized = false;
-  //
-  //    for (int i=0; i<18; i++)
-  //    {
-  //
-  //        rtn = read(m_fd, rawData, 1); //255
-  ////            printf("%X, ",m_rawData[i]);
-  ////            PacketAssembly(m_rawData[i]);
-  //        PacketAssembly_ADH(isInitialized,rawData[0]);
-  //
-  ////        printf(",%X ",rawData[0]);
-  ////        if (rtn == 0)
-  ////        {
-  ////            rtn = i;
-  ////            break;
-  ////        }
-  //    }
-  //    printf("\n");
+  int rtn = read(m_fd, (void*)rxBuf, BUFFERSIZE-1);
 
   if (rtn > 0) {
-    bool isInitialized = false;
     for (int i = 0; i < rtn; i++) {
-      //            printf("%X, ",m_rawData[i]);
-      //            PacketAssembly(m_rawData[i]);
-      PacketAssembly_ADH(isInitialized, m_rawData[i]);
+      //printf("%X, ", (uint8_t)rxBuf[i]);
+      PacketAssembly((uint8_t)rxBuf[i]);
+      //PacketAssembly_ADH(isInitialized, (uint8_t)rxBuf[i]);
     }
-    //        printf("\n");
+    //printf("\n");
   } else if (rtn < 0) {
     fprintf(stderr, "SerialComm. Read() Error:%s(%d)", strerror(-rtn), rtn);
   }
@@ -1695,10 +1614,6 @@ int8_t CEbImuV5::ParsingConfig(char *config) {
   m_param.pons = strtol(ptrName + 5, &ptrEnd, 10);
   if (ptrEnd == nullptr)
     return -4;
-
-#ifdef PRINT_DEBUG_MSG
-    m_param.DumpParams();
-#endif
 
   return 0;
 }
@@ -1948,20 +1863,17 @@ void CEbImuV5::ParsingHexPacket(uint8_t *packet) {
   }
 }
 
-void CEbImuV5::SetBlockRead(bool block, char* msg) {
+void CEbImuV5::SetBlockRead(bool block, const char* msg) {
   m_blockRead = block;
-  printf(">>> %s m_blockRead = %d\n", msg, (int)m_blockRead);
+  fprintf(stdout, "%s / m_blockRead = %d\n", msg, (int)m_blockRead);
 }
 
 int8_t CEbImuV5::WriteCmd(const char *cmd, size_t size_byte) {
   int8_t rtn = 0;
   int n_byte = 0;
   int rxSize = 0;
-  char rxData[4095] = {
-      0,
-  };
-
-  printf("<<< WriteCmd\n");
+  char rxBuf[BUFFERSIZE];
+  char rxData[4095] = {0, };
 
   SetBlockRead(true, "SerialComm. WriteCmd()");
 
@@ -1975,10 +1887,10 @@ int8_t CEbImuV5::WriteCmd(const char *cmd, size_t size_byte) {
   }
 
   for (int i = 0; i < 500; i++) {
-    n_byte = read(m_fd, m_rawData, 255); // 255
+    n_byte = read(m_fd, rxBuf, BUFFERSIZE-1);
 
     if (n_byte > 0) {
-      m_rawData[n_byte] = 0;
+      rxBuf[n_byte] = 0;
       rxSize += n_byte;
 
       if (rxSize >= 4095) {
@@ -1986,12 +1898,12 @@ int8_t CEbImuV5::WriteCmd(const char *cmd, size_t size_byte) {
         rxSize = n_byte;
       }
 
-      strcat(rxData, (char *)m_rawData);
+      strcat(rxData, rxBuf);
 
-      if (strstr((char *)m_rawData, "<ok>") != nullptr) {
+      if (strstr((char *)rxBuf, "<ok>") != nullptr) {
         rtn = 0;
         break;
-      } else if (strstr((char *)m_rawData, "<er>") != nullptr) {
+      } else if (strstr((char *)rxBuf, "<er>") != nullptr) {
         rtn = 1;
         break;
       }
