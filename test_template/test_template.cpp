@@ -71,10 +71,20 @@ void example2() {
 }
 
 /////////////////////////////////////////////////////////////////////
+#include "accum.hpp"
+
+void example3() {
+  int arr_1[5] = {1, 2, 3, 4, 5};
+  int accum_1 = Accum<int, MultPolicy>::accum(&arr_1[0], &arr_1[5]);
+  cout << "accum_1 = " << accum_1 << endl;
+}
+
+/////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
 
-  example1();
-  example2();
+  // example1();
+  // example2();
+  example3();
 
   return 0;
 }

@@ -1,4 +1,4 @@
-#include "spdlog/fmt/bundled/format.h"
+// #include "spdlog/fmt/bundled/format.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/null_sink.h"
