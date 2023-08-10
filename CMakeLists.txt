@@ -11,6 +11,8 @@ INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include")
 include(DebugUtil)
 include(GetDirectoryName)
 
+# add_subdirectory(third_party/capnproto)
+
 file(GLOB TEST_DIRS "test_*")
 foreach(test_dir ${TEST_DIRS})
     add_subdirectory(${test_dir})
