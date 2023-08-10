@@ -8,4 +8,4 @@ file(GLOB SRCS "*.cpp")
 add_executable(${PROJECT_NAME}
     ${SRCS}
 )
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
