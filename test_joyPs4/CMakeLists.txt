@@ -8,4 +8,6 @@ file(GLOB SRCS "*.cpp")
 add_executable(${PROJECT_NAME}
     ${SRCS}
 )
+# target_link_libraries(${PROJECT_NAME} )
+# glog requires 'C++14'
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
