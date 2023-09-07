@@ -29,7 +29,7 @@ int main() {
   while (true) {
     imu_rtn = ebImu.ReadSome();
     printf("length = %d \n", imu_rtn);
-    printf("r: %.3f\t,p: %.3f\t,y: %.3f\n", imu_data.eulerZYX_rad[0], imu_data.eulerZYX_rad[1], imu_data.eulerZYX_rad[2]);
+    printf("[%d]r: %.3f\t,p: %.3f\t,y: %.3f\n", imu_data.timeStamp, imu_data.eulerZYX_rad[0], imu_data.eulerZYX_rad[1], imu_data.eulerZYX_rad[2]);
     usleep(1000);
   }
 

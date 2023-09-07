@@ -59,16 +59,16 @@ typedef struct _EbImuV5Param {
   uint8_t gyroSens = 5;       // 1:125dps ~ 5:2000dps
   uint8_t acclSens = 4;       // 1:3g ~ 3:12g, 4:24g
   uint8_t gyroLpf = 3;        // 0:12Hz ~ 3:47Hz ~ 7:532Hz
-  uint8_t acclLpf = 3;        // 0:1Hz ~ 5:40Hz ~ 9:280Hz
-  uint8_t acclFltFactor = 10;
+  uint8_t acclLpf = 7;        // 0:1Hz ~ 5:40Hz ~ 9:280Hz
+  uint8_t acclFltFactor = 1;
   uint8_t magnFltFactor = 10;
-  double raaLvl = 0.15f;
-  uint32_t raaTime = 10000; // 10000 ->100
-  double rhaLvl = 0.075f;
+  double raaLvl = 0.01f;
+  uint32_t raaTime = 10000;
+  double rhaLvl = 0.075;
   uint32_t rhaTime = 10000;
   uint8_t agcEnable = 1;//1      // Auto Gyroscope Calibration Param
-  double agcThreshold = 0.5f;
-  double agcDrift = 0.3f;
+  double agcThreshold = 0.8;
+  double agcDrift = 0.5;
   uint8_t avcGyro = 0;        // Gyro Active Vibration Cancellation Param
   uint8_t avcAccl = 0;        // Accl Active Vibration Cancellation Param
   uint8_t pons = 1;           // Power on start
@@ -273,7 +273,6 @@ public:
 
 private:
   void PacketAssembly(uint8_t data);
-  void PacketAssembly_ADH(bool &isInitialized, uint8_t data);
   int8_t ParsingConfig(char *config);
   inline void ParsingAsciiPacket(char *packet);
   inline void ParsingHexPacket(uint8_t *packet);
