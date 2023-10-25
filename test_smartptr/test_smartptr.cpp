@@ -122,11 +122,37 @@ void Test_WeakPointer() {
     std::cout << "original pointer is released(null_ptr)." << std::endl;
 }
 
+/**
+ * shared_ptr type-casting
+*/
+class Parent {
+public:
+  virtual ~Parent() { std::cout << "Parent::~Parent()" << std::endl; }
+  virtual void Print() { std::cout << "Parent::Print()" << std::endl; }
+};
+class Child : public Parent {
+public:
+  virtual ~Child() { std::cout << "Child::~Child()" << std::endl; }
+  virtual void Print() { std::cout << "Child::Print()" << std::endl; }
+};
+void Test_TypeCasting() {
+  PrintTestHeader("Test_TypeCasting");
+
+  std::shared_ptr<Parent> pP = std::make_shared<Child>();
+  pP->Print();
+
+
+  std::unique_ptr<Parent> pP2 = std::make_unique<Child>();
+  pP2->Print();
+}
+
+
 int main() {
   Test_UniquePointer();
   Test_UniquePointer_move();
   Test_SharedPointer();
   Test_WeakPointer();
+  Test_TypeCasting();
 
   return 0;
 }

@@ -4,13 +4,15 @@ GetCurrentDirectoryName(PrjName)
 
 project(${PrjName})
 
-find_package(spdlog REQUIRED CONFIG)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+
+find_package (glog 0.6.0 REQUIRED)
 
 file(GLOB SRCS "*.cpp")
 add_executable(${PROJECT_NAME}
     ${SRCS}
 )
-#target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
-target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
-# std::make_unique requires 'C++14'
+# target_link_libraries(${PROJECT_NAME} )
+# glog requires 'C++14'
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)

@@ -1,3 +1,14 @@
+// Compile time log levels
+// define SPDLOG_ACTIVE_LEVEL to desired level 
+// SPDLOG_LEVEL_TRACE,
+// SPDLOG_LEVEL_DEBUG,
+// SPDLOG_LEVEL_INFO,
+// SPDLOG_LEVEL_WARN,
+// SPDLOG_LEVEL_ERROR,
+// SPDLOG_LEVEL_CRITICAL,
+// SPDLOG_LEVEL_OFF
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
+
 // #include "spdlog/fmt/bundled/format.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/daily_file_sink.h"
@@ -101,12 +112,16 @@ int main() {
 
   // change log pattern
   spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
-  // spdlog::info("Welcome to spdlog!");
+  spdlog::info("Welcome to spdlog!");
+  spdlog::debug("Welcome to spdlog!");
 
   // Compile time log levels
   // define SPDLOG_ACTIVE_LEVEL to desired level
   SPDLOG_TRACE("Some trace message with param {}", 42);
   SPDLOG_DEBUG("Some debug message");
+  SPDLOG_INFO("Some info message");
+  SPDLOG_ERROR("Some error message");
+  SPDLOG_CRITICAL("Some critical message");
 }
 
 // void bench_mt(int howmany, std::shared_ptr<spdlog::logger> log,
