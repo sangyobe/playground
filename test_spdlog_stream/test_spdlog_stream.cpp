@@ -233,6 +233,13 @@ int main() {
     dtLog::Initialize("test_spdlog_stream");
     //dtLog::Initialize("test_spdlog_stream", "logs/test_spdlog_stream.txt");
     dtLog::SetLogLevel(dtLog::LogLevel::trace);
+
+
+    LOG(info) << "program started.";
+    LOG(trace) << "sensor values:" << 1.0; 
+	LOG(err) << "some error.";
+    LOG(critical) << "some critical error.";
+	LOG(info) << "program terminated.";
     
 
     LOG_S(trace) << "This is a trace message: " << 42;
