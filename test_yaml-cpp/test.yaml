@@ -1,0 +1,27 @@
+#
+robot:
+  type: LeoQuad
+  version: 1.0
+  id: lq-01
+
+#
+kinematics:
+  dof: 3
+  links:
+    - body
+    - LF-hip
+    - LF-thign
+    - LF-shank
+
+# 
+dynamics:
+  mass: [15.0, 10.0, 5.0, 1.0]
+
+#
+control:
+  kp: [1.0, 2.0, 3.0]
+  kv: [10.0, 20.0, 30.0]
+  ki: [100.0, 200.0, 300.0]
+  param:
+    - param1: 9.8
+    - param2: "hello"
