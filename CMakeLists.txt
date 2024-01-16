@@ -4,10 +4,8 @@ project(CppPlaygroud)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-
-INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include")
-
 include(DebugUtil)
 include(GetDirectoryName)
 
@@ -30,9 +28,21 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third_party/spdlog/CMakeLists.txt")
     message(FATAL_ERROR "The spdlog submodules was not downloaded. GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/CMakeLists.txt")
+    message(FATAL_ERROR "The yaml-cpp submodules was not downloaded. GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+endif()
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third_party/grpc/CMakeLists.txt")
+    message(FATAL_ERROR "The grpc submodules was not downloaded. GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+endif()
 
-# add_subdirectory(third_party/capnproto)
+# set(SPDLOG_INSTALL ON)
 add_subdirectory(third_party/spdlog)
+# set(YAML_CPP_INSTALL ON)
+add_subdirectory(third_party/yaml-cpp)
+add_subdirectory(third_party/grpc)
+
+
+INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include")
 
 file(GLOB TEST_DIRS "test_*")
 foreach(test_dir ${TEST_DIRS})

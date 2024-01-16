@@ -1,9 +1,12 @@
-[submodule "3rdparty"]
-	path = 3rdparty
-	url = https://github.com/capnproto/capnproto.git
 [submodule "third_party/capnproto"]
 	path = third_party/capnproto
 	url = https://github.com/capnproto/capnproto.git
+[submodule "third_party/grpc"]
+	path = third_party/grpc
+	url = https://github.com/grpc/grpc.git
 [submodule "third_party/spdlog"]
 	path = third_party/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "third_party/yaml-cpp"]
+	path = third_party/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
