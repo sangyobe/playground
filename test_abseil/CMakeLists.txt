@@ -4,7 +4,7 @@ GetCurrentDirectoryName(PrjName)
 
 project(${PrjName})
 
-find_package(absl REQUIRED CONFIG)
+# find_package(absl REQUIRED CONFIG)
 
 # Abseil requires C++14
 set(CMAKE_CXX_STANDARD 14)

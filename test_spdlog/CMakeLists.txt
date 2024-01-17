@@ -19,13 +19,16 @@ target_include_directories(${PROJECT_NAME}
 target_link_directories(${PROJECT_NAME} 
     PUBLIC ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
 )
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    message(STATUS "${PROJECT_NAME} is linked with spdlogd.")
-    target_link_libraries(${PROJECT_NAME} PRIVATE spdlogd)
-else()
-    message(STATUS "${PROJECT_NAME} is linked with spdlog.")
-    target_link_libraries(${PROJECT_NAME} PRIVATE spdlog)
-endif()
+target_link_libraries(${PROJECT_NAME} 
+    PRIVATE spdlog::spdlog
+)
+# if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+#     message(STATUS "${PROJECT_NAME} is linked with spdlogd.")
+#     target_link_libraries(${PROJECT_NAME} PRIVATE spdlogd)
+# else()
+#     message(STATUS "${PROJECT_NAME} is linked with spdlog.")
+#     target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
+# endif()
 
 # std::make_unique requires 'C++14'
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)

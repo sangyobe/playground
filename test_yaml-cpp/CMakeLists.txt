@@ -4,7 +4,7 @@ GetCurrentDirectoryName(PrjName)
 
 project(${PrjName})
 
-find_package(yaml-cpp REQUIRED CONFIG)
+# find_package(yaml-cpp REQUIRED CONFIG)
 
 file(GLOB SRCS "*.cpp")
 add_executable(${PROJECT_NAME}

@@ -20,9 +20,10 @@ using dtPoint2D = dt::Math::Point2D;
 int main()
 {
     dt::Math::Point2D xy(2, 1);
-    //dtPoint2D xy2(2,2);
+    dtPoint2D xy2(2,2);
 
     cout << "x=" << xy.x << ", y=" << xy.y << endl;
+    cout << "x=" << xy2.x << ", y=" << xy2.y << endl;
 
     return 0;
 }

@@ -4,7 +4,7 @@ GetCurrentDirectoryName(PrjName)
 
 project(${PrjName})
 
-find_package (glog 0.6.0 REQUIRED)
+# find_package (glog 0.6.0 REQUIRED)
 
 file(GLOB SRCS "*.cpp")
 add_executable(${PROJECT_NAME}
