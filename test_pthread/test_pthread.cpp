@@ -3,26 +3,26 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <sys/resource.h>
+#include <string.h>
+
+#define USING_PTHREAD
+// #define USING_STDTHREAD
+#define USING_STDMUTEX
 
 int main() 
 {
-  bool bRun = true;
-  pthread_t th;
-  void *th_result;
-  int cnt = 0;
-  std::mutex mtx;
-  std::mutex::native_handle_type hmutex = mtx.native_handle();
-
-
   int rtn;
 
+#ifdef USING_STDMUTEX
+  std::mutex mtx;
+  std::mutex::native_handle_type hmutex = mtx.native_handle();
   pthread_mutexattr_t mtx_attr;
-
 
   rtn = pthread_mutexattr_init(&mtx_attr);
   if (rtn)
   {
-    std::cout << "pthread_mutexattr_init error (" << rtn << ")." << std::endl;
+    std::cout << "pthread_mutexattr_init error (" << strerror(errno) << ")." << std::endl;
     exit(-1);
   }
 
@@ -96,6 +96,35 @@ int main()
     std::cout << "pthread_mutex_init error (" << rtn << ")." << std::endl;
     exit(-1);
   }
+#endif
+
+#ifdef USING_PTHREAD
+  pthread_t th;
+  void *th_result;
+
+  // int prio = getpriority(PRIO_PROCESS, 0);
+  // if (errno) 
+  // {
+  //   std::cout << "getpriority() failed with error (" << strerror(errno) << ")." << std::endl;
+  // }
+  // rtn = setpriority(PRIO_PROCESS, 0, 20);
+  // if (rtn)
+  // {
+  //   std::cerr << "Failed to set priority for this process : " << strerror(errno) << std::endl;
+  // }
+
+
+  pthread_attr_t threadAttr;
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);               // removes all CPUs from cpuset
+  CPU_SET(1, &cpuset); // add CPU idx to the cpuset
+  struct sched_param schedParam = { .sched_priority = 70 };
+  if (pthread_attr_init(&threadAttr)) std::cerr << "pthread_attr_init failed: " << strerror(errno) << std::endl;
+  if (pthread_attr_setinheritsched(&threadAttr, PTHREAD_EXPLICIT_SCHED)) std::cerr << "pthread_attr_setinheritsched failed: " << strerror(errno) << std::endl;
+  if (pthread_attr_setschedpolicy(&threadAttr, SCHED_OTHER)) std::cerr << "pthread_attr_setschedpolicy failed: " << strerror(errno) << std::endl;
+  // if (pthread_attr_setaffinity_np(&threadAttr, sizeof(cpuset), &cpuset)) std::cerr << "pthread_attr_setaffinity_np failed: " << strerror(errno) << std::endl;
+  if (pthread_attr_setdetachstate(&threadAttr, PTHREAD_CREATE_JOINABLE)) std::cerr << "pthread_attr_setdetachstate failed: " << strerror(errno) << std::endl;
+  if (pthread_attr_setschedparam(&threadAttr, &schedParam)) std::cerr << "pthread_attr_setschedparam failed: " << strerror(errno) << std::endl;
 
   pthread_create(
       &th, NULL,
@@ -122,6 +151,18 @@ int main()
       },
       (void*)&mtx);
 
+  std::cout << "sched_get_priority_min=" << sched_get_priority_min(SCHED_FIFO) << ", sched_get_priority_max=" << sched_get_priority_max(SCHED_FIFO) << std::endl;
+  
+  if (pthread_setschedprio(th, 0)) std::cerr << "pthread_setschedprio failed: " << strerror(errno) << std::endl;
+  
+  // rtn = setpriority(PRIO_PROCESS, 0, prio);
+  // if (rtn)
+  // {
+  //   std::cerr << "Failed to set priority for this process : " << strerror(errno) << std::endl;
+  // }
+#endif
+
+#ifdef USING_STDTHREAD
   std::thread my_thread = std::thread([&mtx] {
     int count = 0;
     bool bRun = true;
@@ -139,16 +180,19 @@ int main()
     return 0;
   });
   sched_param sch_params;
-  sch_params.sched_priority = 10;
+  sch_params.sched_priority = 1;
   rtn = pthread_setschedparam(my_thread.native_handle(), SCHED_FIFO, &sch_params);
   if(rtn) {
-    std::cerr << "Failed to set Thread scheduling : " << rtn << ":" << errno << std::endl;
+    std::cerr << "Failed to set Thread scheduling : " << strerror(errno) << std::endl;
   }
+#endif
 
-
+#ifdef USING_PTHREAD
   pthread_join(th, &th_result);
+#endif
+#ifdef USING_STDTHREAD
   my_thread.join();
-
+#endif
   
   return 0;
 }
