@@ -32,6 +32,19 @@ void OnReceivePing(const char *topic_name_,
     std::cout << " OnReceivePing "                        << std::endl;
 }
 
+class MyClass
+{
+  public:
+    MyClass(const std::string& name) : _name(name) {}
+  public:
+    int OnReceive(int arg1, double arg2, void* arg) {
+      std::cout << "MyClass " << _name << "(" << arg1 << "," << arg2 << ") " << *((std::string*)arg) << std::endl;
+      return 0;
+    }
+  private:
+    std::string _name;
+};
+
 int main() {
   auto func1 = std::bind(Func1, std::placeholders::_1, 0, 0);
   std::cout << func1(3) << std::endl;
@@ -55,7 +68,10 @@ int main() {
         std::placeholders::_5,
         pub);
 
-
+  std::string cb_arg = "hello!!";
+  MyClass objMyClass("my_class_instance");
+  std::function<int(void*)> my_callback = std::bind(&MyClass::OnReceive, &objMyClass, 1, 3.14, std::placeholders::_1);
+  my_callback((void*)&cb_arg);
 
   return 0;
 }
