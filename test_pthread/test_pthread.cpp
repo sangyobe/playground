@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <thread>
 #include <mutex>
+#include <semaphore.h> // sem_init, sem_wait, sem_post, sem_getvalue
 #include <chrono>
 #include <sys/resource.h>
 #include <string.h>
@@ -10,9 +11,43 @@
 // #define USING_STDTHREAD
 #define USING_STDMUTEX
 
+int test_semaphore()
+{
+  int rtn = 0;
+
+  sem_t sem;
+  rtn = sem_init(&sem, PTHREAD_PROCESS_SHARED, 0);
+  if (rtn) {
+    std::cout << "sem_init error (" << strerror(errno) << ")." << std::endl;
+  }
+
+  do {
+    rtn = sem_post(&sem);
+    if (rtn) {
+      std::cout << "sem_post error (" << strerror(errno) << ")." << std::endl;
+      break;
+    }
+
+    int sval;
+    rtn = sem_getvalue(&sem, &sval);
+    if (rtn) {
+      std::cout << "sem_getvalue error (" << strerror(errno) << ")." << std::endl;
+      break;
+    }
+    std::cout << "sval = " << sval << std::endl;
+
+    sem_wait(&sem);
+    
+  } while (rtn == 0);
+
+  return rtn;
+}
+
 int main() 
 {
   int rtn;
+
+  test_semaphore();
 
 #ifdef USING_STDMUTEX
   std::mutex mtx;
