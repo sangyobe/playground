@@ -45,6 +45,37 @@ class MyClass
     std::string _name;
 };
 
+class MyCallbacks
+{
+  public:
+    int (*cb)(void* arg) {nullptr};
+};
+
+int f(int, int) { return 1; }
+int g(int, int) { return 2; }
+void test(std::function<int(int, int)> && arg)
+{
+    std::cout << "test function: ";
+    if (arg.target<std::plus<int>>()) {
+        std::cout << "it is plus\n";
+        std::cout << "func(10, 5) = " << arg(10, 5) << std::endl;
+    }
+    if (arg.target<std::minus<int>>()) {
+        std::cout << "it is minus\n";
+        std::cout << "func(10, 5) = " << arg(10, 5) << std::endl;
+    }
+ 
+    int (** ptr)(int, int) = arg.target<int(*)(int, int)>();
+    if (ptr && *ptr == f) {
+        std::cout << "it is the function f\n";
+        std::cout << "func(10, 5) = " << (*ptr)(10, 5) << std::endl;
+    }
+    if (ptr && *ptr == g) {
+        std::cout << "it is the function g\n";
+        std::cout << "func(10, 5) = " << (*ptr)(10, 5) << std::endl;
+    }
+}
+
 int main() {
   auto func1 = std::bind(Func1, std::placeholders::_1, 0, 0);
   std::cout << func1(3) << std::endl;
@@ -70,8 +101,29 @@ int main() {
 
   std::string cb_arg = "hello!!";
   MyClass objMyClass("my_class_instance");
+
   std::function<int(void*)> my_callback = std::bind(&MyClass::OnReceive, &objMyClass, 1, 3.14, std::placeholders::_1);
+  std::cout << my_callback.target_type().name() << std::endl;
   my_callback((void*)&cb_arg);
+
+  // typedef int (*CB_t)(void*);
+  // int (*const* ptr)(void*) = my_callback.target<int(void*)>();
+  // if (ptr) {
+  //   (*ptr)((void*)&cb_arg);
+  // }
+  
+
+  MyCallbacks objCb;
+  if (my_callback.target<int(*)(void*)>()) {
+    objCb.cb = *(my_callback.target<int(*)(void*)>());
+    objCb.cb((void*)&cb_arg);
+  }
+
+
+  test(std::function<int(int, int)>(std::plus<int>()));
+  test(std::function<int(int, int)>(std::minus<int>()));
+  test(std::function<int(int, int)>(f));
+  test(std::function<int(int, int)>(g));
 
   return 0;
 }
