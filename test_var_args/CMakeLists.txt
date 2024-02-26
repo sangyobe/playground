@@ -4,10 +4,10 @@ GetCurrentDirectoryName(PrjName)
 
 project(${PrjName})
 
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
-
-file(GLOB SRCS "*.cpp")
-add_executable(${PROJECT_NAME}
-    ${SRCS}
-)
+file(GLOB SRCS "test_var_args_*.cpp")
+foreach(src ${SRCS})
+    get_filename_component(TargetName ${src} NAME_WE)
+    add_executable(${TargetName} ${src})
+    target_link_libraries(${TargetName} pthread)
+    set_property(TARGET ${TargetName} PROPERTY CXX_STANDARD 14)
+endforeach()
