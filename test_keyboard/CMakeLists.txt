@@ -4,12 +4,10 @@ GetCurrentDirectoryName(PrjName)
 
 project(${PrjName})
 
-if (NOT APPLE)
-    file(GLOB SRCS "*.cpp")
-    add_executable(${PROJECT_NAME}
-        ${SRCS}
-    )
-    # target_link_libraries(${PROJECT_NAME} )
-    # glog requires 'C++14'
-    set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
-endif()
+file(GLOB SRCS "test_keyboard_*.cpp")
+foreach(src ${SRCS})
+    get_filename_component(TargetName ${src} NAME_WE)
+    add_executable(${TargetName} ${src} keyboard.cpp)
+    target_link_libraries(${TargetName} pthread)
+    set_property(TARGET ${TargetName} PROPERTY CXX_STANDARD 14)
+endforeach()
