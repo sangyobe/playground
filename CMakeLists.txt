@@ -31,24 +31,24 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/CMakeLists.txt")
     message(FATAL_ERROR "The yaml-cpp submodules was not downloaded. GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third_party/grpc/CMakeLists.txt")
-    message(FATAL_ERROR "The grpc submodules was not downloaded. GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
-endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third_party/glog/CMakeLists.txt")
     message(FATAL_ERROR "The glog submodules was not downloaded. GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-set(gRPC_INSTALL ON)
-set(gRPC_BUILD_TESTS OFF)
-add_subdirectory(third_party/grpc)
+# set(gRPC_INSTALL ON)
+# set(gRPC_BUILD_TESTS OFF)
+# add_subdirectory(third_party/grpc)
+
 # set(SPDLOG_INSTALL ON)
 add_subdirectory(third_party/spdlog)
+
 # set(YAML_CPP_INSTALL ON)
 add_subdirectory(third_party/yaml-cpp)
+
 set(BUILD_TESTING OFF) # disable testing for glog and capnproto
 add_subdirectory(third_party/glog)
-# add_subdirectory(third_party/capnproto)
 
+# add_subdirectory(third_party/capnproto)
 
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include")
 
