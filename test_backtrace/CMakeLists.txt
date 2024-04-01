@@ -4,6 +4,9 @@ GetCurrentDirectoryName(PrjName)
 
 project(${PrjName})
 
+# SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -rdynamic")
+SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
+
 file(GLOB SRCS "*.cpp")
 add_executable(${PROJECT_NAME}
     ${SRCS}
