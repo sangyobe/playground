@@ -5,9 +5,8 @@ int main()
   // formatter
   quill::Handler* file_handler = quill::stdout_handler();
   file_handler->set_pattern(
-    //QUILL_STRING("%(ascii_time) [%(process)] [%(thread)] %(logger_name) - %(message)"), // format
+    // QUILL_STRING("%(ascii_time) [%(process)] [%(thread)] %(logger_name) - %(message)"), // format
     QUILL_STRING("%(ascii_time) [%(level_id)] [%(filename)] [%(lineno)] [%(function_name)] %(message)"), // format
-    //"%D %H:%M:%S.%Qms %z",     // timestamp format
     "%D %H:%M:%S.%Qms %z",     // timestamp format
     //quill::Timezone::GmtTime); // timestamp's timezone
     quill::Timezone::LocalTime); // timestamp's timezone

@@ -8,6 +8,7 @@
 #include <thread>
 #include <chrono>
 #include <list>
+#include <unistd.h>
 
 #define DTCORE_DTLOG_MT
 
@@ -33,9 +34,39 @@ private:
         return filename;
     }
 
-public:
-    static void Initialize(const std::string log_name, const std::string file_basename = "") 
+    static std::tuple<std::string, std::string> split_by_directory(const std::string &fname)
     {
+        auto dir_index = fname.rfind('/');
+
+        // no valid directory found - return empty string as folder and whole path
+        if (dir_index == std::string::npos)
+        {
+            return std::make_tuple(std::string(), fname);
+        }
+        // ends up with '/' - return whole path as directory and empty string as filename
+        else if (dir_index == fname.size() - 1)
+        {
+            return std::make_tuple(fname, std::string());
+        }
+
+        // finally - return a valid directory and file path tuple
+        return std::make_tuple(fname.substr(0, dir_index+1), fname.substr(dir_index+1)); // '/' is included as directory name
+    }
+
+public:
+    enum class LogLevel {
+        trace = spdlog::level::trace,
+        debug = spdlog::level::debug, 
+        info = spdlog::level::info, 
+        warn = spdlog::level::warn, 
+        err = spdlog::level::err, 
+        critical = spdlog::level::critical, 
+        off = spdlog::level::off
+    };
+
+    static void Initialize(const std::string log_name, const std::string file_basename = "", bool annot_datetime = true, bool truncate = false) 
+    {
+        int rtn;
         std::shared_ptr<spdlog::logger> logger{nullptr};
         // Create a logger
         if (file_basename.empty()) {
@@ -46,28 +77,68 @@ public:
 #endif 
         }
         else {
-            spdlog::filename_t filename = annotate_filename_datetime(file_basename);
+            spdlog::filename_t filename = file_basename;
+            if (annot_datetime)
+                filename = annotate_filename_datetime(file_basename);
 #ifdef DTCORE_DTLOG_MT
-            logger = spdlog::basic_logger_mt(log_name, filename);
+            logger = spdlog::basic_logger_mt(log_name, filename, truncate);
 #else
-            logger = spdlog::basic_logger_st(log_name, filename);
-#endif 
+            logger = spdlog::basic_logger_st(log_name, filename, truncate);
+#endif
+            if (annot_datetime) {
+                std::string dname, fname;
+                std::tie(dname, fname) = split_by_directory(filename);
+                rtn = remove(file_basename.c_str());
+                if (0 > rtn) logger->log(spdlog::level::warn, "{} Cannot remove previous symlink.", rtn);
+                rtn = symlink(fname.c_str(), file_basename.c_str());
+                if (0 > rtn) logger->log(spdlog::level::warn, "{} Cannot create symlink to this log file.", rtn);
+            }
         }
         logger->set_pattern("%^[%L][%H:%M:%S.%f]%$%v");
         spdlog::set_default_logger(logger);
     }
 
-    static void Create(const std::string log_name, const std::string file_basename)
+    static void Create(const std::string log_name, const std::string file_basename, bool annot_datetime = true, bool truncate = false)
     {
-        spdlog::filename_t filename = annotate_filename_datetime(file_basename);
+        int rtn;
+        spdlog::filename_t filename = file_basename;
+        if (annot_datetime)
+            filename = annotate_filename_datetime(file_basename);
 
         // Create a logger
 #ifdef DTCORE_DTLOG_MT
-        auto logger = spdlog::basic_logger_mt(log_name, filename);
+        auto logger = spdlog::basic_logger_mt(log_name, filename, truncate);
 #else
-        auto logger = spdlog::basic_logger_st(log_name, filename);
+        auto logger = spdlog::basic_logger_st(log_name, filename, truncate);
 #endif
+        if (annot_datetime) {
+            std::string dname, fname;
+            std::tie(dname, fname) = split_by_directory(filename);
+            rtn = remove(file_basename.c_str());
+            if (0 > rtn) logger->log(spdlog::level::warn, "{} Cannot remove previous symlink.", rtn);
+            rtn = symlink(fname.c_str(), file_basename.c_str());
+            if (0 > rtn) logger->log(spdlog::level::warn, "{} Cannot create symlink to this log file.", rtn);
+        }
         logger->set_pattern("%^[%L][%H:%M:%S.%f]%$%v");
+    }
+
+    static void Flush(const std::string log_name)
+    {
+        std::shared_ptr<spdlog::logger> logger = spdlog::get(log_name);
+        if (logger)
+            logger->flush();
+    }
+
+    static void FlushOn(const std::string log_name, LogLevel lvl)
+    {
+        std::shared_ptr<spdlog::logger> logger = spdlog::get(log_name);
+        if (logger)
+            logger->flush_on(static_cast<spdlog::level::level_enum>(lvl));
+    }
+
+    static void FlushOn(LogLevel lvl)
+    {
+        spdlog::flush_on(static_cast<spdlog::level::level_enum>(lvl));
     }
 
     static void Terminate() 
@@ -75,16 +146,6 @@ public:
         // flush all peding log message
         spdlog::shutdown();
     }
-
-    enum class LogLevel {
-        trace = spdlog::level::trace,
-        debug = spdlog::level::debug, 
-        info = spdlog::level::info, 
-        warn = spdlog::level::warn, 
-        err = spdlog::level::err, 
-        critical = spdlog::level::critical, 
-        off = spdlog::level::off
-    };
 
     static void SetLogLevel(const std::string log_name, LogLevel lvl) {
         std::shared_ptr<spdlog::logger> logger = spdlog::get(log_name);
@@ -219,13 +280,9 @@ public:
 // log to user-added log file
 #define LOG_U(log_name, log_level) LOG_U_S(log_name, log_level)
 
-
-
-
 std::function<double(void)> gen = [] (void) -> double {
     return (rand() / (double)RAND_MAX);
 };
-
 
 int main() {
     using namespace dtCore;
@@ -234,41 +291,35 @@ int main() {
     //dtLog::Initialize("test_spdlog_stream", "logs/test_spdlog_stream.txt");
     dtLog::SetLogLevel(dtLog::LogLevel::trace);
 
-
-    LOG(info) << "program started.";
-    LOG(trace) << "sensor values:" << 1.0; 
-	LOG(err) << "some error.";
-    LOG(critical) << "some critical error.";
-	LOG(info) << "program terminated.";
-    
-
-    LOG_S(trace) << "This is a trace message: " << 42;
-    LOG_S(debug) << "This is a debug message: " << 42;
-    LOG_S(info) << "This is an info message: " << 42;
-    LOG_S(warn) << "This is a warning message.";
-    LOG_S(err) << "This is an error message.";
-    LOG_S(critical) << "This is a critical error message.";
-
+    // log to default logger
+    LOG(trace) << "This is a trace message: " << 42;
+    LOG(debug) << "This is a debug message: " << 42;
     LOG(info) << "This is an info message: " << 42;
+    LOG(warn) << "This is a warning message.";
     LOG(err) << "This is an error message.";
+    LOG(critical) << "This is a critical error message.";
 
     LOG(info) << "This is from format string: " << fmt::format("{0:} {0:}", 1.234);
     LOG(err).format("This is from format string(err): {0:} {1:}", 1.234, 90); 
 
-
     // User custom log
     dtLog::Create("my_log", "logs/test_spdlog_stream_mylog.txt");
     dtLog::SetLogLevel("my_log", dtLog::LogLevel::trace);
-    dtLog::SetLogPattern("my_log", dtLog::LogPatternFlag::epoch);
-    LOG_U_S(my_log, critical) << "This is an user critical error message.";
-    LOG_U(my_log, info) << "This is an user info message: " << 42;
-    LOG_U(my_log, err) << "This is an user error message.";
+    // dtLog::SetLogPattern("my_log", dtLog::LogPatternFlag::epoch);
+    LOG_U(my_log, trace) << "This is a user trace message: " << 42;
+    LOG_U(my_log, debug) << "This is a user debug message: " << 42;
+    LOG_U(my_log, info) << "This is a user info message: " << 42;
+    LOG_U(my_log, warn) << "This is a user warning message.";
+    LOG_U(my_log, err) << "This is a user error message.";
+    LOG_U(my_log, critical) << "This is a user critical error message.";
 
+    LOG_U(my_log, info) << "This is a user format string: " << fmt::format("{0:} {0:}", 1.234);
+    LOG_U(my_log, err).format("This is a user format error string: {0:} {1:}", 1.234, 90);
 
     // Thread test
     std::list<std::thread> threads;
     std::function<void(int)> thread_func = [] (int tid) {
-        int run = 10000;
+        int run = 50000;
         while (run-- > 0) {
             LOG_U(my_log, info).format("{{{}}} -> {:.3},{:.3},{:.3},{:.3},{:.3}", tid, gen(), gen(), gen(), gen(), gen());
             //std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -285,10 +336,6 @@ int main() {
         if ((*th).joinable())
             th->join();
     }
-
-
-
-    
 
     return EXIT_SUCCESS;
 }
