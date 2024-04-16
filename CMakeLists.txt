@@ -4,6 +4,8 @@ project(CppPlaygroud)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_PREFIX_PATH "$ENV{HOME}.local/ART_Framework;${CMAKE_PREFIX_PATH}")
+message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(DebugUtil)
@@ -51,6 +53,8 @@ add_subdirectory(third_party/glog)
 # add_subdirectory(third_party/capnproto)
 
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include")
+INCLUDE_DIRECTORIES("$ENV{HOME}/.local/ART_Framework/include")
+LINK_DIRECTORIES("$ENV{HOME}/.local/ART_Framework/lib")
 
 file(GLOB TEST_DIRS "test_*")
 foreach(test_dir ${TEST_DIRS})
