@@ -1,13 +1,13 @@
 #define MCAP_COMPRESSION_NO_LZ4
 #define MCAP_COMPRESSION_NO_ZSTD
 #define MCAP_IMPLEMENTATION
-#include "mcap/mcap.hpp"
 #include "BuildFileDescriptorSet.h"
 #include "LeoQuad.pb.h"
 #include "foxglove/PointCloud.pb.h"
-#include <iostream>
-#include <fstream>
+#include "mcap/mcap.hpp"
 #include <chrono>
+#include <fstream>
+#include <iostream>
 #include <random>
 
 #define NS_PER_MS 1000000
@@ -16,41 +16,43 @@
 #define POINTS_PER_CLOUD 1000
 #define FIELDS_PER_POINT 3
 
-class PointGenerator {
+class PointGenerator
+{
 private:
-  std::mt19937 _generator;
-  std::uniform_real_distribution<float> _distribution;
+    std::mt19937 _generator;
+    std::uniform_real_distribution<float> _distribution;
 
 public:
-  PointGenerator(uint32_t seed = 0)
-      : _generator(seed)
-      , _distribution(0.0, 1.0) {}
+    PointGenerator(uint32_t seed = 0)
+        : _generator(seed), _distribution(0.0, 1.0) {}
 
-  // next produces a random point on the unit sphere, scaled by `scale`.
-  std::tuple<float, float, float> next(float scale) {
-    float theta = 2 * static_cast<float>(M_PI) * _distribution(_generator);
-    float phi = acos(1.f - (2.f * _distribution(_generator)));
-    float x = float((sin(phi) * cos(theta)) * scale);
-    float y = float((sin(phi) * sin(theta)) * scale);
-    float z = float(cos(phi) * scale);
-    return {x, y, z};
-  }
+    // next produces a random point on the unit sphere, scaled by `scale`.
+    std::tuple<float, float, float> next(float scale)
+    {
+        float theta = 2 * static_cast<float>(M_PI) * _distribution(_generator);
+        float phi = acos(1.f - (2.f * _distribution(_generator)));
+        float x = float((sin(phi) * cos(theta)) * scale);
+        float y = float((sin(phi) * sin(theta)) * scale);
+        float z = float(cos(phi) * scale);
+        return {x, y, z};
+    }
 };
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-    if (argc != 2) {
+    if (argc != 2)
+    {
         std::cerr << "Usage: " << argv[0] << " <output.mcap>" << std::endl;
         return 1;
     }
-    const char* outputFilename = argv[1];
-
+    const char *outputFilename = argv[1];
 
     mcap::McapWriter writer;
     {
         auto options = mcap::McapWriterOptions("");
         const auto res = writer.open(outputFilename, options);
-        if (!res.ok()) {
+        if (!res.ok())
+        {
             std::cerr << "Failt to open " << outputFilename << " for writing: " << res.message << std::endl;
             return 1;
         }
@@ -61,8 +63,8 @@ int main(int argc, char** argv)
 
         // add schema
         mcap::Schema schema(
-            "dtproto.leoquad.LeoQuadStateTimeStamped", 
-            "protobuf", 
+            "dtproto.leoquad.LeoQuadStateTimeStamped",
+            "protobuf",
             foxglove::BuildFileDescriptorSet(dtproto::leoquad::LeoQuadStateTimeStamped::descriptor()).SerializeAsString());
         writer.addSchema(schema);
 
@@ -75,7 +77,6 @@ int main(int argc, char** argv)
     dtproto::leoquad::LeoQuadStateTimeStamped LQState;
     {
     }
-
 
     mcap::ChannelId channelId_pc;
     {
@@ -99,9 +100,10 @@ int main(int argc, char** argv)
         // Describe the data layout to the consumer of the pointcloud. There are 3 single-precision
         // float fields per point.
         pcl.set_point_stride(sizeof(float) * FIELDS_PER_POINT);
-        const char* const fieldNames[] = {"x", "y", "z"};
+        const char *const fieldNames[] = {"x", "y", "z"};
         int fieldOffset = 0;
-        for (const auto& name : fieldNames) {
+        for (const auto &name : fieldNames)
+        {
             auto field = pcl.add_fields();
             field->set_name(name);
             field->set_offset(fieldOffset);
@@ -118,33 +120,30 @@ int main(int argc, char** argv)
         pcl.set_frame_id("pointcloud");
 
         // Position the pointclouds in the center of their coordinate frame.
-        auto* pose = pcl.mutable_pose();
-        auto* position = pose->mutable_position();
+        auto *pose = pcl.mutable_pose();
+        auto *position = pose->mutable_position();
         position->set_x(0);
         position->set_y(0);
         position->set_z(0);
-        auto* orientation = pose->mutable_orientation();
+        auto *orientation = pose->mutable_orientation();
         orientation->set_x(0);
         orientation->set_y(0);
         orientation->set_z(0);
         orientation->set_w(1);
     }
 
-
-
     mcap::Timestamp startTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                                std::chrono::system_clock::now().time_since_epoch())
-                                .count();
+                                    std::chrono::system_clock::now().time_since_epoch())
+                                    .count();
 
     for (uint32_t frameIndex = 0; frameIndex < 100; ++frameIndex)
     {
         mcap::Timestamp cloudTime = startTime + (static_cast<uint64_t>(frameIndex) * 100 * NS_PER_MS);
-        
+
         auto timestamp = LQState.mutable_header()->mutable_time_stamp();
         timestamp->set_seconds(static_cast<int64_t>(cloudTime) / NS_PER_S);
         timestamp->set_nanos(static_cast<int>(cloudTime % NS_PER_S));
-        LQState.mutable_header()->set_seq(frameIndex);
-
+        LQState.mutable_header()->set_seq(frameIndex + 1);
 
         std::string serialized = LQState.SerializeAsString();
         mcap::Message msg;
@@ -152,10 +151,11 @@ int main(int argc, char** argv)
         msg.sequence = frameIndex;
         msg.publishTime = cloudTime;
         msg.logTime = cloudTime;
-        msg.data = reinterpret_cast<const std::byte*>(serialized.data());
+        msg.data = reinterpret_cast<const std::byte *>(serialized.data());
         msg.dataSize = serialized.size();
         const auto res = writer.write(msg);
-        if (!res.ok()) {
+        if (!res.ok())
+        {
             std::cerr << "Failed to write message: " << res.message << "\n";
             writer.terminate();
             writer.close();
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
 
     PointGenerator pointGenerator;
     // write 100 pointcloud messages into the output MCAP file.
-    for (uint32_t frameIndex = 0; frameIndex < 100; ++frameIndex) 
+    for (uint32_t frameIndex = 0; frameIndex < 100; ++frameIndex)
     {
         // Space these frames 100ms apart in time.
         mcap::Timestamp cloudTime = startTime + (static_cast<uint64_t>(frameIndex) * 100 * NS_PER_MS);
@@ -179,15 +179,15 @@ int main(int argc, char** argv)
 
         // write 1000 points into each pointcloud message.
         size_t offset = 0;
-        for (int pointIndex = 0; pointIndex < POINTS_PER_CLOUD; ++pointIndex) 
+        for (int pointIndex = 0; pointIndex < POINTS_PER_CLOUD; ++pointIndex)
         {
             auto [x, y, z] = pointGenerator.next(cloudScale);
-            char* data = pcl.mutable_data()->data();
-            std::memcpy(&data[offset], reinterpret_cast<const char*>(&x), sizeof(x));
+            char *data = pcl.mutable_data()->data();
+            std::memcpy(&data[offset], reinterpret_cast<const char *>(&x), sizeof(x));
             offset += sizeof(x);
-            std::memcpy(&data[offset], reinterpret_cast<const char*>(&y), sizeof(y));
+            std::memcpy(&data[offset], reinterpret_cast<const char *>(&y), sizeof(y));
             offset += sizeof(y);
-            std::memcpy(&data[offset], reinterpret_cast<const char*>(&z), sizeof(z));
+            std::memcpy(&data[offset], reinterpret_cast<const char *>(&z), sizeof(z));
             offset += sizeof(z);
         }
         std::string serialized = pcl.SerializeAsString();
@@ -197,10 +197,11 @@ int main(int argc, char** argv)
         msg.sequence = frameIndex;
         msg.publishTime = cloudTime;
         msg.logTime = cloudTime;
-        msg.data = reinterpret_cast<const std::byte*>(serialized.data());
+        msg.data = reinterpret_cast<const std::byte *>(serialized.data());
         msg.dataSize = serialized.size();
         const auto res = writer.write(msg);
-        if (!res.ok()) {
+        if (!res.ok())
+        {
             std::cerr << "Failed to write message: " << res.message << "\n";
             writer.terminate();
             writer.close();
@@ -210,7 +211,6 @@ int main(int argc, char** argv)
     }
 
     writer.close();
-
 
     return 0;
 }
