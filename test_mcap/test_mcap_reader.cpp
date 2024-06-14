@@ -5,7 +5,6 @@
 #define MCAP_COMPRESSION_NO_LZ4
 #define MCAP_COMPRESSION_NO_ZSTD
 #define MCAP_IMPLEMENTATION
-// #include "mcap/mcap.hpp"
 #include "LeoQuad.pb.h"
 #include "mcap/reader.hpp"
 
@@ -59,7 +58,6 @@ int main(int argc, char **argv)
     ///////////////////////////////////////////////////////////////////////////
     // Example 1. Dynamically read fields
     //
-
     // Load schema definitions
     gp::SimpleDescriptorDatabase protoDb;
     gp::DescriptorPool protoPool(&protoDb);
@@ -89,35 +87,35 @@ int main(int argc, char **argv)
             }
         }
 
-        // gp::Message *message = protoFactory.GetPrototype(descriptor)->New();
-        // if (!message->ParseFromArray(static_cast<const void *>(itr->message.data),
-        //                              itr->message.dataSize))
-        // {
-        //     std::cerr << "failed to parse message using included schema" << std::endl;
-        //     reader.close();
-        //     return 1;
-        // }
-        // std::cout << message->ShortDebugString() << std::endl;
+        gp::Message *message = protoFactory.GetPrototype(descriptor)->New();
+        if (!message->ParseFromArray(static_cast<const void *>(itr->message.data),
+                                     itr->message.dataSize))
+        {
+            std::cerr << "failed to parse message using included schema" << std::endl;
+            reader.close();
+            return 1;
+        }
+        std::cout << message->ShortDebugString() << std::endl;
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Example 2. Read to statically generated class definition
     //
-    for (auto itr = messageView.begin(); itr != messageView.end(); itr++)
-    {
-        if (itr->schema->encoding != "protobuf" || itr->schema->name != "dtproto.leoquad.LeoQuadStateTimeStamped")
-        {
-            continue;
-        }
+    // for (auto itr = messageView.begin(); itr != messageView.end(); itr++)
+    // {
+    //     if (itr->schema->encoding != "protobuf" || itr->schema->name != "dtproto.leoquad.LeoQuadStateTimeStamped")
+    //     {
+    //         continue;
+    //     }
 
-        dtproto::leoquad::LeoQuadStateTimeStamped message;
-        if (!message.ParseFromArray(static_cast<const void *>(itr->message.data), itr->message.dataSize))
-        {
-            std::cerr << "could not parse dtproto.leoquad.LeoQuadStateTimeStamped" << std::endl;
-            return 1;
-        }
-        std::cout << message.ShortDebugString() << std::endl;
-    }
+    //     dtproto::leoquad::LeoQuadStateTimeStamped message;
+    //     if (!message.ParseFromArray(static_cast<const void *>(itr->message.data), itr->message.dataSize))
+    //     {
+    //         std::cerr << "could not parse dtproto.leoquad.LeoQuadStateTimeStamped" << std::endl;
+    //         return 1;
+    //     }
+    //     std::cout << message.ShortDebugString() << std::endl;
+    // }
 
     // close the reader
     reader.close();

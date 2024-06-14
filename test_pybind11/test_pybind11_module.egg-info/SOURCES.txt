@@ -1,0 +1,7 @@
+setup.py
+test_pybind11_module.egg-info/PKG-INFO
+test_pybind11_module.egg-info/SOURCES.txt
+test_pybind11_module.egg-info/dependency_links.txt
+test_pybind11_module.egg-info/not-zip-safe
+test_pybind11_module.egg-info/requires.txt
+test_pybind11_module.egg-info/top_level.txt

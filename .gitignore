@@ -1,7 +1,9 @@
 # User specific
 ###################
 .vscode
+.venv
 build
+dist
 
 # Prerequisites
 ###################
