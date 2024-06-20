@@ -1,26 +1,30 @@
 #include "gridMap.h"
+#include "gridMapIterator.h"
 #include <atomic>
 
 // using namespace dtControl;
 typedef dtControl::GridMap<10, 10, SYSREAL> LocalGridMap;
+typedef dtControl::GridMapIterator<dtControl::GridMap<10, 10, SYSREAL>> LocalGridMapIterator;
 using namespace std;
 
 int main()
 {
-    double tmp = NAN; // 0.0;
-    if (isnan(tmp) != 0)
-        cout << "NAN !!!" << endl;
-    else
-        cout << "not NAN !!!" << endl;
+    LocalGridMap gridmap;
 
-    LocalGridMap gridMap;
+    // test iterator
+    LocalGridMapIterator gridMapItr(gridmap);
+    while (!gridMapItr.IsEnd())
+    {
+        std::cout << (*gridMapItr)(0) << ", " << (*gridMapItr)(1) << std::endl;
+        ++gridMapItr;
+    }
 
     // set sample data
     for (int i = 0; i < 10; i++)
     {
         LocalGridMap::Index index;
         index << i, i;
-        gridMap.SetLayerData("height_map", index, 0.1 * i);
+        gridmap.SetLayerData("height_map", index, 0.1 * i);
     }
 
     std::atomic<bool> bRun{true};
@@ -37,31 +41,31 @@ int main()
         }
         else if (cmd == "s")
         {
-            gridMap.Print();
+            gridmap.Print();
         }
         else if (cmd == "w")
         {
             center(1) += 0.05;
-            gridMap.SetCenterPosition(center);
-            gridMap.Print();
+            gridmap.SetCenterPosition(center);
+            gridmap.Print();
         }
         else if (cmd == "x")
         {
             center(1) -= 0.05;
-            gridMap.SetCenterPosition(center);
-            gridMap.Print();
+            gridmap.SetCenterPosition(center);
+            gridmap.Print();
         }
         else if (cmd == "d")
         {
             center(0) += 0.05;
-            gridMap.SetCenterPosition(center);
-            gridMap.Print();
+            gridmap.SetCenterPosition(center);
+            gridmap.Print();
         }
         else if (cmd == "a")
         {
             center(0) -= 0.05;
-            gridMap.SetCenterPosition(center);
-            gridMap.Print();
+            gridmap.SetCenterPosition(center);
+            gridmap.Print();
         }
     }
 
