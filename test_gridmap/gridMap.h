@@ -30,8 +30,8 @@ class GridMap
 public:
     GridMap();
     ~GridMap();
-    const uint16_t col() { return m_col; }
-    const uint16_t row() { return m_row; }
+    const uint16_t col() const { return m_col; }
+    const uint16_t row() const { return m_row; }
 
     typedef dtMath::dtVector<DOF2, m_type> Position;
     typedef dtMath::dtVector<DOF2, int> Index;
@@ -42,13 +42,13 @@ public:
      * Get map width in x direction.
      * @return map width in meter.
      */
-    m_type GetWidth();
+    m_type GetWidth() const;
 
     /**
      * Get map height in y direction.
      * @return map height in meter.
      */
-    m_type GetHeight();
+    m_type GetHeight() const;
 
     /**
      * Get cell index from position.
@@ -56,7 +56,7 @@ public:
      * @param[out] index the cell index.
      * @return true if position is in the grid map boundary and succeed to get coresponding cell index.
      */
-    bool GetIndexFromPosition(Position position, Index &index);
+    bool GetIndexFromPosition(const Position position, Index &index) const;
 
     /**
      * Get cell center position from index.
@@ -64,26 +64,28 @@ public:
      * @param[out] position the center position of the cell in the map frame.
      * @return true if succeed to get coresponding position in the map frame. false if index is out of grid map range.
      */
-    bool GetPositionFromIndex(Index index, Position &position);
+    bool GetPositionFromIndex(const Index index, Position &position) const;
 
     /**
      * Set center position.
+     * New center position and cell index are caclulated.
+     * The new center position is set as the calculated center of the center cell.
      * @param[in] position new center position to set.
      * @return true if new center position is set.
      */
-    bool SetCenterPosition(Position position);
+    bool SetCenterPosition(const Position position);
 
     /**
      * Get current center position.
      * @param[out] position center position.
      */
-    void GetCenterPosition(Position &position);
+    void GetCenterPosition(Position &position) const;
 
     /**
      * Get current center cell index.
      * @param[out] index center index.
      */
-    void GetCenterIndex(Index &index);
+    void GetCenterIndex(Index &index) const;
 
     /**
      * Set layer data.
@@ -91,7 +93,16 @@ public:
      * @param[in] index the cell index.
      * @param[in] value cell value to set
      */
-    void SetLayerData(const std::string &key, Index index, m_type value);
+    void SetLayerData(const std::string &key, const Index index, m_type value);
+
+    /**
+     * Get layer data.
+     * @param[in] key the name of the data layer.
+     * @param[in] index the cell index.
+     * @param[out] value cell value
+     * @return true if getting cell value succeded.
+     */
+    bool GetLayerData(const std::string &key, const Index index, m_type &value);
 
     /**
      * Get layer for read-only with its name.
@@ -113,7 +124,7 @@ public:
      * Print gridmap information and it's layers values.
      * @param[in] key the name of the new layer. If it is empty string, print values for all layers.
      */
-    void Print(const std::string &key = "");
+    void Print(const std::string &key = "") const;
 
 private:
     /**
@@ -121,7 +132,7 @@ private:
      * @param[in] key the name of the layer.
      * @return true if a layer named \'layer\' exists.
      */
-    bool IsExist(const std::string &key);
+    bool IsExist(const std::string &key) const;
 
     /**
      * Add an empty layer. All values are set as NAN.
@@ -139,10 +150,16 @@ private:
     bool AddLayer(const std::string &key, Layer &&data);
 
     /**
-     * Adjust index to be bounded in the valid range, (0, row-1) for x and (0, col-1) for y direction.
+     * Wrap index to be bounded in the valid range, (0, row-1) for x and (0, col-1) for y direction.
      * @param[in/out] index Index to be rounded.
      */
-    void AdjustIndex(Index &index);
+    void WrapIndex(Index &index) const;
+
+    /**
+     * Unwrap index to be in range [centerIndex(0)-row/2, centerIndex(0)+row/2) for x and [centerIndex(1)-col/2, centerIndex(1)+col/2) for y direction.
+     * @param[in/out] index Index to be rounded.
+     */
+    void UnwrapIndex(Index &index) const;
 
 private:
     m_type _resolution;                             //<! cell resolution in meter.

@@ -24,6 +24,8 @@ int main()
     }
 
     std::atomic<bool> bRun{true};
+    LocalGridMap::Position center;
+    center.SetFill(0.0);
     while (bRun.load())
     {
         cout << "(type \'q\' to quit) >\n";
@@ -39,32 +41,24 @@ int main()
         }
         else if (cmd == "w")
         {
-            LocalGridMap::Position center;
-            gridMap.GetCenterPosition(center);
             center(1) += 0.05;
             gridMap.SetCenterPosition(center);
             gridMap.Print();
         }
         else if (cmd == "x")
         {
-            LocalGridMap::Position center;
-            gridMap.GetCenterPosition(center);
             center(1) -= 0.05;
             gridMap.SetCenterPosition(center);
             gridMap.Print();
         }
         else if (cmd == "d")
         {
-            LocalGridMap::Position center;
-            gridMap.GetCenterPosition(center);
             center(0) += 0.05;
             gridMap.SetCenterPosition(center);
             gridMap.Print();
         }
         else if (cmd == "a")
         {
-            LocalGridMap::Position center;
-            gridMap.GetCenterPosition(center);
             center(0) -= 0.05;
             gridMap.SetCenterPosition(center);
             gridMap.Print();
