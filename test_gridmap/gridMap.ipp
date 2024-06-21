@@ -3,46 +3,47 @@
 namespace dtControl
 {
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-GridMap<m_row, m_col, m_type>::GridMap()
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+GridMap<m_col, m_row, m_type>::GridMap()
 {
     // const dtCore::dtConf &conf = RobotParam::Get().conf();
     this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
-    this->_width = m_row * _resolution;
-    this->_height = m_col * _resolution;
+    this->_width = m_col * _resolution;
+    this->_height = m_row * _resolution;
+    this->_centerIndex.SetZero();
+    this->_centerPosition.SetFill(0.5*this->_resolution);
+    this->_topRightPosition(0) = ((m_col + 1) >> 1) * this->_resolution;
+    this->_topRightPosition(1) = ((m_row + 1) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(0) = -((m_col) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(1) = -((m_row) >> 1) * this->_resolution;
 
     AddLayer("height_map");
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-GridMap<m_row, m_col, m_type>::~GridMap()
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+GridMap<m_col, m_row, m_type>::~GridMap()
 {
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-m_type GridMap<m_row, m_col, m_type>::GetWidth() const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+m_type GridMap<m_col, m_row, m_type>::GetWidth() const
 {
     // return (m_col * _resolution);
     return this->_width;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-m_type GridMap<m_row, m_col, m_type>::GetHeight() const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+m_type GridMap<m_col, m_row, m_type>::GetHeight() const
 {
     // return (m_row * _resolution);
     return this->_height;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-bool GridMap<m_row, m_col, m_type>::GetIndexFromPosition(const Position position, Index &index) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::GetIndexFromPosition(const Position position, Index &index) const
 {
-    // check if position is in the local gridmap range
-    // assert((position(0) < this->_centerPosition(0) + 0.5 * this->_width) && (position(0) >= this->_centerPosition(0) - 0.5 * this->_width) && "GridMap::GetIndexFromPosition(...), position.x are not in the local gridmap range.");
-    // assert((position(1) < this->_centerPosition(1) + 0.5 * this->_height) && (position(1) >= this->_centerPosition(1) - 0.5 * this->_height) && "GridMap::GetIndexFromPosition(...), position.y are not in the local gridmap range.");
-    if ((position(0) >= this->_centerPosition(0) + 0.5 * this->_width) || (position(0) < this->_centerPosition(0) - 0.5 * this->_width))
-        return false; // out of range
-    if ((position(1) >= this->_centerPosition(1) + 0.5 * this->_height) || (position(1) < this->_centerPosition(1) - 0.5 * this->_height))
-        return false; // out of range
+    if (!IsValid(position))
+        return false;
 
     // convert position in map frame to cell index
     index(0) = (position(0) >= 0 ? ((int)(position(0) / this->_resolution) % m_col) : ((int)(position(0) / this->_resolution) % m_col + m_col - 1));
@@ -50,22 +51,19 @@ bool GridMap<m_row, m_col, m_type>::GetIndexFromPosition(const Position position
     return true;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-bool GridMap<m_row, m_col, m_type>::GetPositionFromIndex(const Index index, Position &position) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::GetPositionFromIndex(const Index index, Position &position) const
 {
+    // wrapped index인지 체크한다.
     // assert(index(0) >= 0 && index(0) < m_col);
     // assert(index(1) >= 0 && index(1) < m_row);
 
+    // 입력된 index를 유효한 unwrapped index로 바꾸기 위해 1회 wrap & unwrap 해준다.
     Index cellIndex;
     cellIndex(0) = index(0);
     cellIndex(1) = index(1);
     WrapIndex(cellIndex);
-
-    if (cellIndex(0) < (this->_centerIndex(0) - (m_col >> 1))) cellIndex(0) += m_col;
-    if (cellIndex(0) >= (this->_centerIndex(0) + ((m_col + 1) >> 1))) cellIndex(0) -= m_col; // m_col 이 홀수인 경우, cellIndex(0) 최대값은 centerIndex + (m_col / 2)에 1을 더한 값임.
-
-    if (cellIndex(1) < (this->_centerIndex(1) - (m_row >> 1))) cellIndex(1) += m_row;
-    if (cellIndex(1) >= (this->_centerIndex(1) + ((m_row + 1) >> 1))) cellIndex(1) -= m_row; // m_row 가 홀수인 경우, cellIndex(1) 최대값은 centerIndex + (m_row / 2)에 1을 더한 값임.
+    UnwrapIndex(cellIndex);
 
     position(0) = this->_centerPosition(0) + (cellIndex(0) - this->_centerIndex(0)) * this->_resolution;
     position(1) = this->_centerPosition(1) + (cellIndex(1) - this->_centerIndex(1)) * this->_resolution;
@@ -73,8 +71,8 @@ bool GridMap<m_row, m_col, m_type>::GetPositionFromIndex(const Index index, Posi
     return true;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-bool GridMap<m_row, m_col, m_type>::SetCenterPosition(const Position position)
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::SetCenterPosition(const Position position)
 {
     Index centerIndex;
     if (!GetIndexFromPosition(position, centerIndex))
@@ -123,8 +121,9 @@ bool GridMap<m_row, m_col, m_type>::SetCenterPosition(const Position position)
             idx = begin(0);
             while (idx != end(0))
             {
-                kv.second.SetColVec((uint16_t)idx, &zero_col[0], (size_t)(sizeof(zero_col[0]) * m_row));
-                // kv.second.SetColVec((uint16_t)idx, 0.0 /*NAN*/);
+                // gridmap 의 column은 dtMatrix의 row!
+                kv.second.SetRowVec((uint16_t)idx, &zero_col[0], (size_t)(sizeof(zero_col[0]) * m_row));
+                // kv.second.SetRowVec((uint16_t)idx, 0.0 /*NAN*/);
                 idx++;
                 if (idx >= m_col) idx = 0;
             }
@@ -132,47 +131,55 @@ bool GridMap<m_row, m_col, m_type>::SetCenterPosition(const Position position)
             idx = begin(1);
             while (idx != end(1))
             {
-                kv.second.SetRowVec((uint16_t)idx, &zero_row[0], (size_t)(sizeof(zero_row[0]) * m_col));
-                // kv.second.SetRowVec((uint16_t)idx, 0.0/*NAN*/);
+                // gridmap 의 row은 dtMatrix의 column!
+                kv.second.SetColVec((uint16_t)idx, &zero_row[0], (size_t)(sizeof(zero_row[0]) * m_col));
+                // kv.second.SetColVec((uint16_t)idx, 0.0/*NAN*/);
                 idx++;
                 if (idx >= m_row) idx = 0;
             }
         }
 
+        // 아래 코드 순서 주의!
+        // center index를 업데이트하기 전에, 현재 center index기준으로 새로운 center index의 position을 구해야 함.
         Position centerPosition;
-        GetPositionFromIndex(centerIndex, centerPosition);
+        GetPositionFromIndex(centerIndex, centerPosition); 
         this->_centerPosition = centerPosition;
         this->_centerIndex = centerIndex;
+        this->_topRightPosition = centerPosition - 0.5 * this->_resolution;
+        this->_topRightPosition(0) += ((m_col + 1) >> 1) * this->_resolution;
+        this->_topRightPosition(1) += ((m_row + 1) >> 1) * this->_resolution;
+        this->_bottomLeftPosition = centerPosition - 0.5 * this->_resolution;
+        this->_bottomLeftPosition(0) -= ((m_col) >> 1) * this->_resolution;
+        this->_bottomLeftPosition(1) -=((m_row) >> 1) * this->_resolution;
     }
 
-    // this->_centerPosition = position;
     return true;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-void GridMap<m_row, m_col, m_type>::GetCenterPosition(Position &position) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::GetCenterPosition(Position &position) const
 {
     position = this->_centerPosition;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-void GridMap<m_row, m_col, m_type>::GetCenterIndex(Index &index) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::GetCenterIndex(Index &index) const
 {
     index = this->_centerIndex;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-void GridMap<m_row, m_col, m_type>::SetLayerData(const std::string &key, const Index index, m_type value)
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::SetLayerData(const std::string &key, const Index index, m_type value)
 {
     typename std::unordered_map<std::string, Layer>::iterator itr = _layers.find(key);
     if (itr != _layers.end())
     {
-        (itr->second)(index(1), index(0)) = value;
+        (itr->second)(index(0), index(1)) = value;
     }
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-bool GridMap<m_row, m_col, m_type>::GetLayerData(const std::string &key, const Index index, m_type &value)
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::GetLayerData(const std::string &key, const Index index, m_type &value)
 {
     assert(index(0) >= 0 && index(0) < m_col);
     assert(index(1) >= 0 && index(1) < m_row);
@@ -184,12 +191,12 @@ bool GridMap<m_row, m_col, m_type>::GetLayerData(const std::string &key, const I
     if (itr == _layers.end())
         return false;
 
-    value = (itr->second)(index(1), index(0));
+    value = (itr->second)(index(0), index(1));
     return true;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-const typename GridMap<m_row, m_col, m_type>::Layer &GridMap<m_row, m_col, m_type>::GetLayer(const std::string &key) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+const typename GridMap<m_col, m_row, m_type>::Layer &GridMap<m_col, m_row, m_type>::GetLayer(const std::string &key) const
 {
     typename std::unordered_map<std::string, Layer>::const_iterator itr = _layers.find(key);
     if (itr != _layers.end())
@@ -202,8 +209,8 @@ const typename GridMap<m_row, m_col, m_type>::Layer &GridMap<m_row, m_col, m_typ
     }
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-typename GridMap<m_row, m_col, m_type>::Layer &GridMap<m_row, m_col, m_type>::GetLayer(const std::string &key)
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+typename GridMap<m_col, m_row, m_type>::Layer &GridMap<m_col, m_row, m_type>::GetLayer(const std::string &key)
 {
     typename std::unordered_map<std::string, Layer>::iterator itr = _layers.find(key);
     if (itr != _layers.end())
@@ -216,14 +223,14 @@ typename GridMap<m_row, m_col, m_type>::Layer &GridMap<m_row, m_col, m_type>::Ge
     }
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-bool GridMap<m_row, m_col, m_type>::IsExist(const std::string &key) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::IsExist(const std::string &key) const
 {
     return (_layers.find(key) != _layers.end());
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-bool GridMap<m_row, m_col, m_type>::AddLayer(const std::string &key)
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::AddLayer(const std::string &key)
 {
     if (IsExist(key)) return false;
 
@@ -233,8 +240,8 @@ bool GridMap<m_row, m_col, m_type>::AddLayer(const std::string &key)
     return true;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-bool GridMap<m_row, m_col, m_type>::AddLayer(const std::string &key, Layer &&data)
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::AddLayer(const std::string &key, Layer &&data)
 {
     if (IsExist(key)) return false;
 
@@ -242,8 +249,8 @@ bool GridMap<m_row, m_col, m_type>::AddLayer(const std::string &key, Layer &&dat
     return true;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-void GridMap<m_row, m_col, m_type>::WrapIndex(Index &index) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::WrapIndex(Index &index) const
 {
     index(0) = index(0) % m_col;
     index(1) = index(1) % m_row;
@@ -251,21 +258,33 @@ void GridMap<m_row, m_col, m_type>::WrapIndex(Index &index) const
     if (index(1) < 0) index(1) += m_row;
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-void GridMap<m_row, m_col, m_type>::UnwrapIndex(Index &index) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::UnwrapIndex(Index &index) const
 {
     assert(index(0) >= 0 && index(0) < m_col); // check if input index is wrapped index.
     assert(index(1) >= 0 && index(1) < m_row);
 
-    if (index(0) < _centerIndex(0) - (m_col >> 1)) index(0) += m_col;
-    else if (index(0) >= _centerIndex(0) + (m_col >> 1)) index(0) -= m_col;
+    if (index(0) < (this->_centerIndex(0) - (m_col >> 1))) index(0) += m_col;
+    else if (index(0) >= (this->_centerIndex(0) + ((m_col + 1) >> 1))) index(0) -= m_col; // m_col 이 홀수인 경우, index(0) 최대값은 centerIndex + (m_col / 2)에 1을 더한 값임.
 
-    if (index(1) < _centerIndex(1) - (m_row >> 1)) index(1) += m_row;
-    else if (index(1) >= _centerIndex(1) + (m_col >> 1)) index(1) -= m_row;
+    if (index(1) < (this->_centerIndex(1) - (m_row >> 1))) index(1) += m_row;
+    else if (index(1) >= (this->_centerIndex(1) + ((m_row + 1) >> 1))) index(1) -= m_row; // m_row 가 홀수인 경우, cellIndex(1) 최대값은 centerIndex + (m_row / 2)에 1을 더한 값임.
 }
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
-void GridMap<m_row, m_col, m_type>::Print(const std::string &key) const
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::IsValid(const Position &position) const
+{
+    // check if position is in the local gridmap range
+    if ((position(0) < this->_bottomLeftPosition(0)) || (position(0) >= this->_topRightPosition(0)))
+        return false; // out of range
+    if ((position(1) < this->_bottomLeftPosition(1)) || (position(1) >= this->_topRightPosition(1)))
+        return false; // out of range
+
+    return true;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::Print(const std::string &key) const
 {
     try
     {

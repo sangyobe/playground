@@ -36,8 +36,8 @@ public:
     GridMapIterator &operator++()
     {
         _index_lin++;
-        _index(0) = _index_lin % _size(0);
-        _index(1) = _index_lin / _size(0);
+        _index(0) = _index_lin / _size(1);
+        _index(1) = _index_lin % _size(1);
         return *this;
     }
     bool operator==(const GridMapIterator &ref)

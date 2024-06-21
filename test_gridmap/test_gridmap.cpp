@@ -3,8 +3,8 @@
 #include <atomic>
 
 // using namespace dtControl;
-typedef dtControl::GridMap<10, 10, SYSREAL> LocalGridMap;
-typedef dtControl::GridMapIterator<dtControl::GridMap<10, 10, SYSREAL>> LocalGridMapIterator;
+typedef dtControl::GridMap<5, 4, SYSREAL> LocalGridMap;
+typedef dtControl::GridMapIterator<dtControl::GridMap<5, 4, SYSREAL>> LocalGridMapIterator;
 using namespace std;
 
 int main()
@@ -20,7 +20,7 @@ int main()
     }
 
     // set sample data
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 4; i++)
     {
         LocalGridMap::Index index;
         index << i, i;

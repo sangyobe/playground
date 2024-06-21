@@ -24,18 +24,19 @@ typedef double SYSREAL;
 namespace dtControl
 {
 
-template <uint16_t m_row, uint16_t m_col, typename m_type>
+template <uint16_t m_col, uint16_t m_row, typename m_type>
 class GridMap
 {
 public:
     GridMap();
     ~GridMap();
-    const uint16_t col() const { return m_col; }
-    const uint16_t row() const { return m_row; }
+    const uint16_t col() const { return m_col; }  //<! number of columns in x-direction
+    const uint16_t row() const { return m_row; }  //<! number of rows in y-direction
 
     typedef dtMath::dtVector<DOF2, m_type> Position;
     typedef dtMath::dtVector<DOF2, int> Index;
-    typedef dtMath::dtMatrix<m_row, m_col, m_type> Layer;
+    typedef dtMath::dtMatrix<m_col, m_row, m_type> Layer; // grid index상의 (x, y)는 dtMatrix에는 (x행, y열)에 저장되며,
+                                                          // 따라서 x축 크기(m_col)는 dtMatrix의 행 갯수, y축 크기(m_row)는 열 갯수에 해당됨.
 
 public:
     /**
@@ -161,9 +162,18 @@ private:
      */
     void UnwrapIndex(Index &index) const;
 
+    /**
+     * Check if the given position is in the valid gridmap region.
+     * @param[in] position position to check if it is in the valid region.
+     * @return true if the position is in the valid region.
+     */
+    bool IsValid(const Position &position) const;
+
 private:
     m_type _resolution;                             //<! cell resolution in meter.
     Position _centerPosition;                       //<! center position in meter.
+    Position _topRightPosition;                     //<! top-right position in meter.
+    Position _bottomLeftPosition;                   //<! bottom-left position in meter.
     Index _centerIndex;                             //<! center index.
     m_type _width;                                  //<! map width in x-direction in meter.
     m_type _height;                                 //<! map height in y-direction in meter.
