@@ -28,10 +28,13 @@ template <uint16_t m_col, uint16_t m_row, typename m_type>
 class GridMap
 {
 public:
+    typedef m_type ValueType;
+
     GridMap();
     ~GridMap();
-    const uint16_t col() const { return m_col; }  //<! number of columns in x-direction
-    const uint16_t row() const { return m_row; }  //<! number of rows in y-direction
+    const uint16_t col() const { return m_col; }            //<! number of columns in x-direction.
+    const uint16_t row() const { return m_row; }            //<! number of rows in y-direction.
+    const m_type resolution() const { return _resolution; } //<! cell resolution in meter.
 
     typedef dtMath::dtVector<DOF2, m_type> Position;
     typedef dtMath::dtVector<DOF2, int> Index;
@@ -127,7 +130,7 @@ public:
      */
     void Print(const std::string &key = "") const;
 
-private:
+public:
     /**
      * Check if a layer exists.
      * @param[in] key the name of the layer.
