@@ -50,7 +50,7 @@ void testBoxIterator(LocalGridMap &gridmap)
     while (!itr.IsEnd())
     {
         std::cout << (*itr)(0) << ", " << (*itr)(1) << std::endl;
-        gridmap.SetLayerData("height_map", *itr, 0.5);
+        gridmap.SetLayerData("height_map", *itr, 4.0);
         ++itr;
     }
     std::cout << std::endl;
@@ -71,7 +71,7 @@ void testCircleIterator(LocalGridMap &gridmap)
     while (!itr.IsEnd())
     {
         std::cout << (*itr)(0) << ", " << (*itr)(1) << std::endl;
-        gridmap.SetLayerData("height_map", *itr, 0.3);
+        gridmap.SetLayerData("height_map", *itr, 8.0);
         ++itr;
     }
     std::cout << std::endl;

@@ -327,11 +327,11 @@ void GridMap<m_col, m_row, m_type>::Print(const std::string &key) const
                     WrapIndex(index);
                     if (_centerIndex == index)
                     {
-                        printf("[[%7.3f]] ", (m_type)layer(index(1), index(0)));
+                        printf("[[%7.3f]] ", (m_type)layer(index(0), index(1)));
                     }
                     else
                     {
-                        printf("%7.3f ", (m_type)layer(index(1), index(0)));
+                        printf("%7.3f ", (m_type)layer(index(0), index(1)));
                     }
                 }
                 printf("\n");
