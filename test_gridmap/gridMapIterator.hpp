@@ -19,6 +19,7 @@ template <typename GridMapType>
 class GridMapIterator
 {
 public:
+    // constructor
     GridMapIterator(GridMapType &gridmap) : _gridmap(gridmap)
     {
         _size(0) = gridmap.col();
@@ -27,6 +28,18 @@ public:
         _index.SetZero();
         _index_lin = 0;
     }
+
+    // copy constructor
+    GridMapIterator(const GridMapIterator &ref)
+        : _gridmap(ref._gridmap)
+    {
+        this->_size = ref._size;
+        this->_index = ref._index;
+        this->_size_lin = ref._size_lin;
+        this->_index_lin = ref = _index_lin;
+    }
+
+    // destructor
     ~GridMapIterator() {}
 
     typename GridMapType::Index &operator*()
@@ -39,6 +52,12 @@ public:
         _index(0) = _index_lin / _size(1);
         _index(1) = _index_lin % _size(1);
         return *this;
+    }
+    GridMapIterator operator++(int)
+    {
+        GridMapIterator tmp(*this);
+        operator++();
+        return tmp;
     }
     bool operator==(const GridMapIterator &ref)
     {

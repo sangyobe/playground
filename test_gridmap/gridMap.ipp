@@ -8,8 +8,10 @@ GridMap<m_col, m_row, m_type>::GridMap()
 {
     // const dtCore::dtConf &conf = RobotParam::Get().conf();
     this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
-    this->_width = m_col * _resolution;
-    this->_height = m_row * _resolution;
+    this->_size(0) = m_col * _resolution;
+    this->_size(1) = m_row * _resolution;
+    this->_dim(0) = m_col;
+    this->_dim(1) = m_row;
     this->_centerIndex.SetZero();
     this->_centerPosition.SetFill(0.5*this->_resolution);
     this->_topRightPosition(0) = ((m_col + 1) >> 1) * this->_resolution;
@@ -29,14 +31,14 @@ template <uint16_t m_col, uint16_t m_row, typename m_type>
 m_type GridMap<m_col, m_row, m_type>::GetWidth() const
 {
     // return (m_col * _resolution);
-    return this->_width;
+    return this->_size(0);
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 m_type GridMap<m_col, m_row, m_type>::GetHeight() const
 {
     // return (m_row * _resolution);
-    return this->_height;
+    return this->_size(1);
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
@@ -272,6 +274,27 @@ void GridMap<m_col, m_row, m_type>::UnwrapIndex(Index &index) const
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
+bool GridMap<m_col, m_row, m_type>::IsValid(const Index &index, bool wrapped) const
+{
+    if (wrapped)
+    {
+        return (
+            index(0) >= 0 &&
+            index(0) < m_col &&
+            index(1) >= 0 &&
+            index(1) < m_row);
+    }
+    else
+    {
+        return (
+            index(0) >= (this->_centerIndex(0) - (m_col >> 1)) &&
+            index(0) < (this->_centerIndex(0) + ((m_col + 1) >> 1)) &&
+            index(1) >= (this->_centerIndex(1) - (m_row >> 1)) &&
+            index(1) < (this->_centerIndex(1) + ((m_row + 1) >> 1)));
+    }
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
 bool GridMap<m_col, m_row, m_type>::IsValid(const Position &position) const
 {
     // check if position is in the local gridmap range
@@ -304,11 +327,11 @@ void GridMap<m_col, m_row, m_type>::Print(const std::string &key) const
                     WrapIndex(index);
                     if (_centerIndex == index)
                     {
-                        printf("[[%7.7f]] ", (m_type)layer(index(1), index(0)));
+                        printf("[[%7.3f]] ", (m_type)layer(index(1), index(0)));
                     }
                     else
                     {
-                        printf("%7.7f ", (m_type)layer(index(1), index(0)));
+                        printf("%7.3f ", (m_type)layer(index(1), index(0)));
                     }
                 }
                 printf("\n");

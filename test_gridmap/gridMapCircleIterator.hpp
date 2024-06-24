@@ -31,15 +31,47 @@ public:
         : _gridmap(gridmap), _center(center), _radius(radius)
     {
         _gridmap.GetIndexFromPosition(_center, _center_index);
-        _start_index = _center_index - (int)(_radius / gridmap.resolution());
-        _end_index = _center_index + (int)(_radius / gridmap.resolution());
+        _gridmap.UnwrapIndex(_center_index);
+        _start_index = _center_index - (int)(_radius / gridmap.resolution()) - 1;
+        _end_index = _center_index + (int)(_radius / gridmap.resolution()) + 1;
         _size = (_end_index - _start_index) + 1;
         assert(_size(0) > 0 && _size(1) > 0);
         _size_lin = _size(0) * _size(1);
         _index_lin = 0;
         _index = _start_index;
         _gridmap.WrapIndex(_index);
+
+        // search the first valid index which is in the given circle
+        while (!IsEnd())
+        {
+            if (_gridmap.IsValid(_index))
+            {
+                typename GridMapType::Position cell_center;
+                _gridmap.GetPositionFromIndex(_index, cell_center);
+                typename GridMapType::ValueType _cell_distance = sqrt((center - cell_center).dot(center - cell_center));
+                if (_cell_distance <= _radius)
+                    break;
+            }
+            ++(*this);
+        }
     }
+
+    // copy constructor
+    GridMapCircleIterator(const GridMapCircleIterator &ref)
+        : _gridmap(ref._gridmap)
+    {
+        this->_size = ref._size;
+        this->_index = ref._index;
+        this->_start_index = ref._start_index;
+        this->_end_index = ref._end_index;
+        this->_center = ref._center;
+        this->_center_index = ref._center_index;
+        this->_radius = ref._radius;
+        this->_size_lin = ref._size_lin;
+        this->_index_lin = ref._index_lin;
+    }
+
+    // destructor
     ~GridMapCircleIterator() {}
 
     typename GridMapType::Index &operator*()
@@ -48,12 +80,31 @@ public:
     }
     GridMapCircleIterator &operator++()
     {
+        if (IsEnd())
+            return *this;
+
         _index_lin++;
         _index(0) = _index_lin / _size(1);
         _index(1) = _index_lin % _size(1);
         _index += _start_index;
         _gridmap.WrapIndex(_index);
-        return *this;
+
+        if (_gridmap.IsValid(_index))
+        {
+            typename GridMapType::Position cell_center;
+            _gridmap.GetPositionFromIndex(_index, cell_center);
+            typename GridMapType::ValueType _cell_distance = sqrt((_center - cell_center).dot(_center - cell_center));
+            if (_cell_distance <= _radius)
+                return *this;
+        }
+
+        return ++(*this);
+    }
+    GridMapCircleIterator operator++(int)
+    {
+        GridMapCircleIterator tmp(*this);
+        operator++();
+        return tmp;
     }
     bool operator==(const GridMapCircleIterator &ref)
     {

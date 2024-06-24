@@ -13,51 +13,97 @@ typedef dtControl::GridMapBoxIterator<LocalGridMap> LocalGridMapBoxIterator;
 typedef dtControl::GridMapCircleIterator<LocalGridMap> LocalGridMapCircleIterator;
 using namespace std;
 
-int main()
+void testIterator(LocalGridMap &gridmap)
 {
-    LocalGridMap gridmap;
+    std::cout << "----------------------------------------------------------" << std::endl;
+    std::cout << "Iterate all cells..." << std::endl;
+    std::cout << std::endl;
 
-    // test iterator
-    // LocalGridMapIterator gridMapItr(gridmap);
-    // while (!gridMapItr.IsEnd())
-    // {
-    //     std::cout << (*gridMapItr)(0) << ", " << (*gridMapItr)(1) << std::endl;
-    //     ++gridMapItr;
-    // }
+    LocalGridMapIterator itr(gridmap);
+    while (!itr.IsEnd())
+    {
+        std::cout << (*itr)(0) << ", " << (*itr)(1) << std::endl;
+        ++itr;
+    }
+    std::cout << std::endl;
+}
 
-    // test box iterator
-    // LocalGridMap::Index boxStart, boxEnd;
+void testBoxIterator(LocalGridMap &gridmap)
+{
+    std::cout << "----------------------------------------------------------" << std::endl;
+    std::cout << "Iterate cells inside a given box shape..." << std::endl;
+    std::cout << std::endl;
+
+    LocalGridMap::Index boxStart, boxEnd;
+    LocalGridMap::Position boxStartPosition, boxEndPosition;
+    boxStartPosition(0) = -0.35;
+    boxStartPosition(1) = 0.15;
+    boxEndPosition(0) = -0.15;
+    boxEndPosition(1) = 0.35;
+    gridmap.GetIndexFromPosition(boxStartPosition, boxStart);
+    gridmap.GetIndexFromPosition(boxEndPosition, boxEnd);
     // boxStart(0) = 7;
     // boxStart(1) = 2;
     // boxEnd(0) = 9;
     // boxEnd(1) = 3;
-    // LocalGridMapBoxIterator boxItr(gridmap, boxStart, boxEnd);
-    // while (!boxItr.IsEnd())
-    // {
-    //     std::cout << (*boxItr)(0) << ", " << (*boxItr)(1) << std::endl;
-    //     ++boxItr;
-    // }
+    LocalGridMapBoxIterator itr(gridmap, boxStart, boxEnd);
+    while (!itr.IsEnd())
+    {
+        std::cout << (*itr)(0) << ", " << (*itr)(1) << std::endl;
+        gridmap.SetLayerData("height_map", *itr, 0.5);
+        ++itr;
+    }
+    std::cout << std::endl;
+}
 
-    // test circle iterator
+void testCircleIterator(LocalGridMap &gridmap)
+{
+    std::cout << "----------------------------------------------------------" << std::endl;
+    std::cout << "Iterate cells inside a given circle shape..." << std::endl;
+    std::cout << std::endl;
+
     LocalGridMap::Position circleCenter;
     LocalGridMap::ValueType circleRadius;
     circleCenter(0) = 0.25;
-    circleCenter(1) = 0.25;
-    circleRadius = 0.1;
-    LocalGridMapCircleIterator circleItr(gridmap, circleCenter, circleRadius);
-    while (!circleItr.IsEnd())
+    circleCenter(1) = -0.25;
+    circleRadius = 0.25;
+    LocalGridMapCircleIterator itr(gridmap, circleCenter, circleRadius);
+    while (!itr.IsEnd())
     {
-        std::cout << (*circleItr)(0) << ", " << (*circleItr)(1) << std::endl;
-        ++circleItr;
+        std::cout << (*itr)(0) << ", " << (*itr)(1) << std::endl;
+        gridmap.SetLayerData("height_map", *itr, 0.3);
+        ++itr;
     }
+    std::cout << std::endl;
+}
+
+int main()
+{
+    LocalGridMap gridmap;
 
     // set sample data
-    for (int i = 0; i < 4; i++)
+    LocalGridMapIterator gridMapItr(gridmap);
+    while (!gridMapItr.IsEnd())
     {
-        LocalGridMap::Index index;
-        index << i, i;
-        gridmap.SetLayerData("height_map", index, 0.1 * i);
+        if ((*gridMapItr)(0) == (*gridMapItr)(1))
+        {
+            gridmap.SetLayerData("height_map", *gridMapItr, 0.1);
+        }
+        else
+        {
+            gridmap.SetLayerData("height_map", *gridMapItr, 0.0);
+        }
+        ++gridMapItr;
     }
+
+    // test iterator
+    // testIterator(gridmap);
+
+    // test box iterator
+    testBoxIterator(gridmap);
+
+    // test circle iterator
+    testCircleIterator(gridmap);
 
     std::atomic<bool> bRun{true};
     LocalGridMap::Position center;

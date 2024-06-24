@@ -36,8 +36,10 @@ public:
     const uint16_t row() const { return m_row; }            //<! number of rows in y-direction.
     const m_type resolution() const { return _resolution; } //<! cell resolution in meter.
 
-    typedef dtMath::dtVector<DOF2, m_type> Position;
-    typedef dtMath::dtVector<DOF2, int> Index;
+    typedef dtMath::dtVector<DOF2, m_type> Position;      //<! 2D position (x, y) in meter.
+    typedef dtMath::dtVector<DOF2, m_type> Size;          //<! size of the map (width, height) in meter.
+    typedef dtMath::dtVector<DOF2, int> Index;            //<! cell index (x, y) in the grid map.
+    typedef dtMath::dtVector<DOF2, int> Dimension;        //<! cell size(dimension) in x and y direction.
     typedef dtMath::dtMatrix<m_col, m_row, m_type> Layer; // grid index상의 (x, y)는 dtMatrix에는 (x행, y열)에 저장되며,
                                                           // 따라서 x축 크기(m_col)는 dtMatrix의 행 갯수, y축 크기(m_row)는 열 갯수에 해당됨.
 
@@ -166,6 +168,14 @@ public:
     void UnwrapIndex(Index &index) const;
 
     /**
+     * Check if the given index is in the valid gridmap region.
+     * @param[in] index index to check if it is in the valid region.
+     * @param[in] wrapped whether the given index is wrapped or not.
+     * @return true if the index is in the valid region.
+     */
+    bool IsValid(const Index &index, bool wrapped = true) const;
+
+    /**
      * Check if the given position is in the valid gridmap region.
      * @param[in] position position to check if it is in the valid region.
      * @return true if the position is in the valid region.
@@ -174,12 +184,12 @@ public:
 
 private:
     m_type _resolution;                             //<! cell resolution in meter.
+    Size _size;                                     //<! map width and height in meter.
+    Dimension _dim;                                 //<! cell dimension.
     Position _centerPosition;                       //<! center position in meter.
     Position _topRightPosition;                     //<! top-right position in meter.
     Position _bottomLeftPosition;                   //<! bottom-left position in meter.
     Index _centerIndex;                             //<! center index.
-    m_type _width;                                  //<! map width in x-direction in meter.
-    m_type _height;                                 //<! map height in y-direction in meter.
     std::unordered_map<std::string, Layer> _layers; //<! cell data layers.
 };
 
