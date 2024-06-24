@@ -67,6 +67,4 @@ private:
 
 } // namespace dtControl
 
-#include "gridMapIterator.ipp"
-
 #endif // DTCONTROL_GRIDMAPITERATOR_H_

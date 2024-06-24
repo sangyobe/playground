@@ -1,10 +1,16 @@
 #include "gridMap.h"
-#include "gridMapIterator.h"
+#include "gridMapBoxIterator.hpp"
+#include "gridMapCircleIterator.hpp"
+#include "gridMapIterator.hpp"
 #include <atomic>
 
 // using namespace dtControl;
-typedef dtControl::GridMap<5, 4, SYSREAL> LocalGridMap;
-typedef dtControl::GridMapIterator<dtControl::GridMap<5, 4, SYSREAL>> LocalGridMapIterator;
+#define GRID_SIZE_X 20
+#define GRID_SIZE_Y 20
+typedef dtControl::GridMap<GRID_SIZE_X, GRID_SIZE_Y, SYSREAL> LocalGridMap;
+typedef dtControl::GridMapIterator<LocalGridMap> LocalGridMapIterator;
+typedef dtControl::GridMapBoxIterator<LocalGridMap> LocalGridMapBoxIterator;
+typedef dtControl::GridMapCircleIterator<LocalGridMap> LocalGridMapCircleIterator;
 using namespace std;
 
 int main()
@@ -12,11 +18,37 @@ int main()
     LocalGridMap gridmap;
 
     // test iterator
-    LocalGridMapIterator gridMapItr(gridmap);
-    while (!gridMapItr.IsEnd())
+    // LocalGridMapIterator gridMapItr(gridmap);
+    // while (!gridMapItr.IsEnd())
+    // {
+    //     std::cout << (*gridMapItr)(0) << ", " << (*gridMapItr)(1) << std::endl;
+    //     ++gridMapItr;
+    // }
+
+    // test box iterator
+    // LocalGridMap::Index boxStart, boxEnd;
+    // boxStart(0) = 7;
+    // boxStart(1) = 2;
+    // boxEnd(0) = 9;
+    // boxEnd(1) = 3;
+    // LocalGridMapBoxIterator boxItr(gridmap, boxStart, boxEnd);
+    // while (!boxItr.IsEnd())
+    // {
+    //     std::cout << (*boxItr)(0) << ", " << (*boxItr)(1) << std::endl;
+    //     ++boxItr;
+    // }
+
+    // test circle iterator
+    LocalGridMap::Position circleCenter;
+    LocalGridMap::ValueType circleRadius;
+    circleCenter(0) = 0.25;
+    circleCenter(1) = 0.25;
+    circleRadius = 0.1;
+    LocalGridMapCircleIterator circleItr(gridmap, circleCenter, circleRadius);
+    while (!circleItr.IsEnd())
     {
-        std::cout << (*gridMapItr)(0) << ", " << (*gridMapItr)(1) << std::endl;
-        ++gridMapItr;
+        std::cout << (*circleItr)(0) << ", " << (*circleItr)(1) << std::endl;
+        ++circleItr;
     }
 
     // set sample data
