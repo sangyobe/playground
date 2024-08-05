@@ -5,8 +5,8 @@
 
 int main()
 {
-    dtMath::dtQuaternion q;
-    q.SetElement(0x02, M_PI / 2);
+    dt::Math::Quaternion q;
+    q.SetElement(0x02, -M_PI / 2);
     q.Print();
 
     return 0;

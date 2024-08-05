@@ -1,30 +1,87 @@
 // #include "algorithm/robotParam.h"
-
 namespace dtControl
 {
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
+const m_type GridMap<m_col, m_row, m_type>::NAN_VAL = 0.0; // NAN;
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
 GridMap<m_col, m_row, m_type>::GridMap()
 {
-    // const dtCore::dtConf &conf = RobotParam::Get().conf();
+    // const dt::Utils::Conf &conf = RobotParam::Get().conf();
     this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
     this->_size(0) = m_col * _resolution;
     this->_size(1) = m_row * _resolution;
     this->_dim(0) = m_col;
     this->_dim(1) = m_row;
-    this->_centerIndex.SetZero();
-    this->_centerPosition.SetFill(0.5*this->_resolution);
-    this->_topRightPosition(0) = ((m_col + 1) >> 1) * this->_resolution;
-    this->_topRightPosition(1) = ((m_row + 1) >> 1) * this->_resolution;
-    this->_bottomLeftPosition(0) = -((m_col) >> 1) * this->_resolution;
-    this->_bottomLeftPosition(1) = -((m_row) >> 1) * this->_resolution;
+    this->_centerIndex(0) = ((m_col) >> 1);
+    this->_centerIndex(1) = ((m_row) >> 1);
+    this->_centerPosition(0) = (m_type)this->_centerIndex(0) * this->_resolution + (0.5 * this->_resolution);
+    this->_centerPosition(1) = (m_type)this->_centerIndex(1) * this->_resolution + (0.5 * this->_resolution);
+    this->_topRightPosition(0) = (this->_centerIndex(0) * this->_resolution) + ((m_col + 1) >> 1) * this->_resolution;
+    this->_topRightPosition(1) = (this->_centerIndex(1) * this->_resolution) + ((m_row + 1) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(0) = (this->_centerIndex(0) * this->_resolution) - ((m_col) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(1) = (this->_centerIndex(1) * this->_resolution) - ((m_row) >> 1) * this->_resolution;
+    this->_r.SetZero();
 
-    AddLayer("height_map");
+    // add some default layers
+    AddLayer("hmap");
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+GridMap<m_col, m_row, m_type>::GridMap(const std::vector<std::string> layerNames)
+{
+    // const dt::Utils::Conf &conf = RobotParam::Get().conf();
+    this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
+    this->_size(0) = m_col * _resolution;
+    this->_size(1) = m_row * _resolution;
+    this->_dim(0) = m_col;
+    this->_dim(1) = m_row;
+    this->_centerIndex(0) = ((m_col) >> 1);
+    this->_centerIndex(1) = ((m_row) >> 1);
+    this->_centerPosition(0) = (m_type)this->_centerIndex(0) * this->_resolution + (0.5 * this->_resolution);
+    this->_centerPosition(1) = (m_type)this->_centerIndex(1) * this->_resolution + (0.5 * this->_resolution);
+    this->_topRightPosition(0) = (this->_centerIndex(0) * this->_resolution) + ((m_col + 1) >> 1) * this->_resolution;
+    this->_topRightPosition(1) = (this->_centerIndex(1) * this->_resolution) + ((m_row + 1) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(0) = (this->_centerIndex(0) * this->_resolution) - ((m_col) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(1) = (this->_centerIndex(1) * this->_resolution) - ((m_row) >> 1) * this->_resolution;
+    this->_r.SetZero();
+
+    for (auto layer : layerNames)
+        AddLayer(layer);
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+GridMap<m_col, m_row, m_type>::GridMap(const std::vector<std::string> layerNames, const Index centerIndex)
+{
+    // const dt::Utils::Conf &conf = RobotParam::Get().conf();
+    this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
+    this->_size(0) = m_col * _resolution;
+    this->_size(1) = m_row * _resolution;
+    this->_dim(0) = m_col;
+    this->_dim(1) = m_row;
+    this->_centerIndex = centerIndex;
+    this->_centerPosition(0) = (m_type)this->_centerIndex(0) * this->_resolution + (0.5 * this->_resolution);
+    this->_centerPosition(1) = (m_type)this->_centerIndex(1) * this->_resolution + (0.5 * this->_resolution);
+    this->_topRightPosition(0) = (this->_centerIndex(0) * this->_resolution) + ((m_col + 1) >> 1) * this->_resolution;
+    this->_topRightPosition(1) = (this->_centerIndex(1) * this->_resolution) + ((m_row + 1) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(0) = (this->_centerIndex(0) * this->_resolution) - ((m_col) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(1) = (this->_centerIndex(1) * this->_resolution) - ((m_row) >> 1) * this->_resolution;
+    this->_r.SetZero();
+
+    for (auto layer : layerNames)
+        AddLayer(layer);
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 GridMap<m_col, m_row, m_type>::~GridMap()
 {
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+const typename GridMap<m_col, m_row, m_type>::Size &GridMap<m_col, m_row, m_type>::GetSize() const
+{
+    return _size;
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
@@ -42,14 +99,39 @@ m_type GridMap<m_col, m_row, m_type>::GetHeight() const
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
+m_type GridMap<m_col, m_row, m_type>::GetLeft() const
+{
+    return this->_bottomLeftPosition(0);
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+m_type GridMap<m_col, m_row, m_type>::GetRight() const
+{
+    return this->_topRightPosition(0);
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+m_type GridMap<m_col, m_row, m_type>::GetBottom() const
+{
+    return this->_bottomLeftPosition(1);
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+m_type GridMap<m_col, m_row, m_type>::GetTop() const
+{
+    return this->_topRightPosition(1);
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
 bool GridMap<m_col, m_row, m_type>::GetIndexFromPosition(const Position position, Index &index) const
 {
     if (!IsValid(position))
         return false;
 
-    // convert position in map frame to cell index
-    index(0) = (position(0) >= 0 ? ((int)(position(0) / this->_resolution) % m_col) : ((int)(position(0) / this->_resolution) % m_col + m_col - 1));
-    index(1) = (position(1) >= 0 ? ((int)(position(1) / this->_resolution) % m_row) : ((int)(position(1) / this->_resolution) % m_row + m_row - 1));
+    // convert position to cell index
+    Position lpos = position - _r;
+    index(0) = (lpos(0) >= 0 ? ((int)(lpos(0) / this->_resolution) % m_col) : ((int)(lpos(0) / this->_resolution) % m_col + m_col - 1));
+    index(1) = (lpos(1) >= 0 ? ((int)(lpos(1) / this->_resolution) % m_row) : ((int)(lpos(1) / this->_resolution) % m_row + m_row - 1));
     return true;
 }
 
@@ -69,6 +151,7 @@ bool GridMap<m_col, m_row, m_type>::GetPositionFromIndex(const Index index, Posi
 
     position(0) = this->_centerPosition(0) + (cellIndex(0) - this->_centerIndex(0)) * this->_resolution;
     position(1) = this->_centerPosition(1) + (cellIndex(1) - this->_centerIndex(1)) * this->_resolution;
+    position += _r;
 
     return true;
 }
@@ -89,7 +172,7 @@ bool GridMap<m_col, m_row, m_type>::SetCenterPosition(const Position position)
         // invalidate cells which are out of local map range,
         // and update the center index
         Index begin, end;
-        if (this->_centerPosition(0) < position(0))
+        if ((this->_centerPosition(0) + this->_r(0)) < position(0))
         {
             begin(0) = this->_centerIndex(0) - (m_col >> 1);
             end(0) = centerIndex(0) - (m_col >> 1);
@@ -100,7 +183,7 @@ bool GridMap<m_col, m_row, m_type>::SetCenterPosition(const Position position)
             end(0) = this->_centerIndex(0) - (m_col >> 1);
         }
 
-        if (this->_centerPosition(1) < position(1))
+        if ((this->_centerPosition(1) + this->_r(1)) < position(1))
         {
             begin(1) = this->_centerIndex(1) - (m_row >> 1);
             end(1) = centerIndex(1) - (m_row >> 1);
@@ -114,9 +197,6 @@ bool GridMap<m_col, m_row, m_type>::SetCenterPosition(const Position position)
         WrapIndex(begin);
         WrapIndex(end);
 
-        SYSREAL zero_row[m_col], zero_col[m_row];
-        std::fill(zero_row, zero_row + m_col, 0.0 /*NAN*/);
-        std::fill(zero_col, zero_col + m_row, 0.0 /*NAN*/);
         int idx;
         for (auto &kv : _layers)
         {
@@ -124,8 +204,7 @@ bool GridMap<m_col, m_row, m_type>::SetCenterPosition(const Position position)
             while (idx != end(0))
             {
                 // gridmap 의 column은 dtMatrix의 row!
-                kv.second.SetRowVec((uint16_t)idx, &zero_col[0], (size_t)(sizeof(zero_col[0]) * m_row));
-                // kv.second.SetRowVec((uint16_t)idx, 0.0 /*NAN*/);
+                kv.second.SetFillRow((uint16_t)idx, NAN_VAL);
                 idx++;
                 if (idx >= m_col) idx = 0;
             }
@@ -134,8 +213,7 @@ bool GridMap<m_col, m_row, m_type>::SetCenterPosition(const Position position)
             while (idx != end(1))
             {
                 // gridmap 의 row은 dtMatrix의 column!
-                kv.second.SetColVec((uint16_t)idx, &zero_row[0], (size_t)(sizeof(zero_row[0]) * m_col));
-                // kv.second.SetColVec((uint16_t)idx, 0.0/*NAN*/);
+                kv.second.SetFillCol((uint16_t)idx, NAN_VAL);
                 idx++;
                 if (idx >= m_row) idx = 0;
             }
@@ -144,30 +222,94 @@ bool GridMap<m_col, m_row, m_type>::SetCenterPosition(const Position position)
         // 아래 코드 순서 주의!
         // center index를 업데이트하기 전에, 현재 center index기준으로 새로운 center index의 position을 구해야 함.
         Position centerPosition;
-        GetPositionFromIndex(centerIndex, centerPosition); 
-        this->_centerPosition = centerPosition;
+        GetPositionFromIndex(centerIndex, centerPosition);
+        this->_centerPosition = centerPosition - this->_r;
         this->_centerIndex = centerIndex;
-        this->_topRightPosition = centerPosition - 0.5 * this->_resolution;
+        this->_topRightPosition = this->_centerPosition - 0.5 * this->_resolution;
         this->_topRightPosition(0) += ((m_col + 1) >> 1) * this->_resolution;
         this->_topRightPosition(1) += ((m_row + 1) >> 1) * this->_resolution;
-        this->_bottomLeftPosition = centerPosition - 0.5 * this->_resolution;
+        this->_bottomLeftPosition = this->_centerPosition - 0.5 * this->_resolution;
         this->_bottomLeftPosition(0) -= ((m_col) >> 1) * this->_resolution;
-        this->_bottomLeftPosition(1) -=((m_row) >> 1) * this->_resolution;
+        this->_bottomLeftPosition(1) -= ((m_row) >> 1) * this->_resolution;
     }
 
     return true;
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::MoveCenterPosition(const Position position)
+{
+    Position lpos = position - _r;
+
+    this->_centerIndex(0) = (lpos(0) >= 0 ? ((int)(lpos(0) / this->_resolution) % m_col) : ((int)(lpos(0) / this->_resolution) % m_col + m_col - 1));
+    this->_centerIndex(1) = (lpos(1) >= 0 ? ((int)(lpos(1) / this->_resolution) % m_row) : ((int)(lpos(1) / this->_resolution) % m_row + m_row - 1));
+
+    this->_centerPosition(0) = (lpos(0) >= 0 ? ((m_type)((int)(lpos(0) / this->_resolution) + 0.5) * this->_resolution) : ((m_type)((int)(lpos(0) / this->_resolution) - 0.5) * this->_resolution));
+    this->_centerPosition(1) = (lpos(1) >= 0 ? ((m_type)((int)(lpos(1) / this->_resolution) + 0.5) * this->_resolution) : ((m_type)((int)(lpos(1) / this->_resolution) - 0.5) * this->_resolution));
+
+    this->_topRightPosition = this->_centerPosition - 0.5 * this->_resolution;
+    this->_topRightPosition(0) += ((m_col + 1) >> 1) * this->_resolution;
+    this->_topRightPosition(1) += ((m_row + 1) >> 1) * this->_resolution;
+    this->_bottomLeftPosition = this->_centerPosition - 0.5 * this->_resolution;
+    this->_bottomLeftPosition(0) -= ((m_col) >> 1) * this->_resolution;
+    this->_bottomLeftPosition(1) -= ((m_row) >> 1) * this->_resolution;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
 void GridMap<m_col, m_row, m_type>::GetCenterPosition(Position &position) const
 {
-    position = this->_centerPosition;
+    position = (this->_centerPosition + this->_r);
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+typename GridMap<m_col, m_row, m_type>::Position GridMap<m_col, m_row, m_type>::GetCenterPosition() const
+{
+    Position position = (this->_centerPosition + this->_r);
+    return position;
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 void GridMap<m_col, m_row, m_type>::GetCenterIndex(Index &index) const
 {
     index = this->_centerIndex;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+typename GridMap<m_col, m_row, m_type>::Index GridMap<m_col, m_row, m_type>::GetCenterIndex() const
+{
+    Index index = this->_centerIndex;
+    return index;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::GetStartIndex(Index &index) const
+{
+    index = this->_centerIndex;
+    index(0) -= (m_col >> 1);
+    index(1) -= (m_row >> 1);
+    WrapIndex(index);
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+typename GridMap<m_col, m_row, m_type>::Index GridMap<m_col, m_row, m_type>::GetStartIndex() const
+{
+    Index index = this->_centerIndex;
+    index(0) -= (m_col >> 1);
+    index(1) -= (m_row >> 1);
+    WrapIndex(index);
+    return index;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::SetMapDisplacement(const Position &r)
+{
+    _r = r;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+typename GridMap<m_col, m_row, m_type>::Position GridMap<m_col, m_row, m_type>::GetMapDisplacement() const
+{
+    return _r;
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
@@ -195,6 +337,26 @@ bool GridMap<m_col, m_row, m_type>::GetLayerData(const std::string &key, const I
 
     value = (itr->second)(index(0), index(1));
     return true;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::ResetLayerData(const std::string &key, const Index index)
+{
+    typename std::unordered_map<std::string, Layer>::iterator itr = _layers.find(key);
+    if (itr != _layers.end())
+    {
+        (itr->second)(index(0), index(1)) = NAN_VAL;
+    }
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::ResetLayerData(const std::string &key)
+{
+    typename std::unordered_map<std::string, Layer>::iterator itr = _layers.find(key);
+    if (itr != _layers.end())
+    {
+        (itr->second).SetFill(NAN_VAL);
+    }
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
@@ -237,7 +399,7 @@ bool GridMap<m_col, m_row, m_type>::AddLayer(const std::string &key)
     if (IsExist(key)) return false;
 
     Layer mat;
-    mat.SetFill(0.0 /*NAN*/);
+    mat.SetFill(NAN_VAL);
     _layers.insert(std::make_pair(key, mat));
     return true;
 }
@@ -274,6 +436,24 @@ void GridMap<m_col, m_row, m_type>::UnwrapIndex(Index &index) const
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
+void GridMap<m_col, m_row, m_type>::BoundPosition(Position &position) const
+{
+    Position lpos = position - this->_r;
+
+    if (lpos(0) < this->_bottomLeftPosition(0))
+        lpos(0) = this->_bottomLeftPosition(0);
+    else if (lpos(0) >= this->_topRightPosition(0))
+        lpos(0) = this->_topRightPosition(0) - 1e-6;
+
+    if (lpos(1) < this->_bottomLeftPosition(1))
+        lpos(1) = this->_bottomLeftPosition(1);
+    else if (lpos(1) >= this->_topRightPosition(1))
+        lpos(1) = this->_topRightPosition(1) - 1e-6;
+
+    position = lpos + this->_r;
+}
+
+template <uint16_t m_col, uint16_t m_row, typename m_type>
 bool GridMap<m_col, m_row, m_type>::IsValid(const Index &index, bool wrapped) const
 {
     if (wrapped)
@@ -297,10 +477,11 @@ bool GridMap<m_col, m_row, m_type>::IsValid(const Index &index, bool wrapped) co
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 bool GridMap<m_col, m_row, m_type>::IsValid(const Position &position) const
 {
+    Position lpos = position - this->_r;
     // check if position is in the local gridmap range
-    if ((position(0) < this->_bottomLeftPosition(0)) || (position(0) >= this->_topRightPosition(0)))
+    if ((lpos(0) < this->_bottomLeftPosition(0)) || (lpos(0) >= this->_topRightPosition(0)))
         return false; // out of range
-    if ((position(1) < this->_bottomLeftPosition(1)) || (position(1) >= this->_topRightPosition(1)))
+    if ((lpos(1) < this->_bottomLeftPosition(1)) || (lpos(1) >= this->_topRightPosition(1)))
         return false; // out of range
 
     return true;
@@ -344,8 +525,9 @@ void GridMap<m_col, m_row, m_type>::Print(const std::string &key) const
             printf("resolution: %.3f (m)\n", _resolution);
             printf("dimention: %d x %d\n", m_row, m_col);
             printf("size: %.3f x %.3f (m)\n", GetWidth(), GetHeight());
+            printf("map displacement: %.3f , %.3f (m)\n", _r(0), _r(1));
             printf("center index: %d , %d\n", _centerIndex(0), _centerIndex(1));
-            printf("center position: %.3f , %.3f (m)\n", _centerPosition(0), _centerPosition(1));
+            printf("center position (wrt map frame): %.3f , %.3f (m)\n", _centerPosition(0), _centerPosition(1));
 
             for (const std::pair<std::string, Layer> &kv : _layers)
             {

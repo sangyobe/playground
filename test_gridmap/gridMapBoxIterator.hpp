@@ -39,14 +39,6 @@ public:
         _index_lin = 0;
         _index = _start_index;
         _gridmap.WrapIndex(_index);
-
-        // search the first valid index
-        while (!IsEnd())
-        {
-            if (_gridmap.IsValid(_index))
-                break;
-            ++(*this);
-        }
     }
 
     /**
@@ -61,24 +53,29 @@ public:
         typename GridMapType::Position bottom_left = center - size * 0.5;
         typename GridMapType::Position top_right = center + size * 0.5;
 
-        _gridmap.GetIndexFromPosition(bottom_left, _start_index);
-        _gridmap.GetIndexFromPositoin(top_right, _end_index);
-        _gridmap.UnwrapIndex(_start_index);
-        _gridmap.UnwrapIndex(_end_index);
-        _size = (_end_index - _start_index) + 1;
-        assert(_size(0) > 0 && _size(1) > 0);
-        _size_lin = _size(0) * _size(1);
-
-        _index_lin = 0;
-        _index = _start_index;
-        _gridmap.WrapIndex(_index);
-
-        // search the first valid index
-        while (!IsEnd())
+        if (top_right(0) < _gridmap.GetLeft() ||
+            top_right(1) < _gridmap.GetBottom() ||
+            bottom_left(0) >= _gridmap.GetRight() ||
+            bottom_left(1) >= _gridmap.GetTop())
         {
-            if (_gridmap.IsValid(_index))
-                break;
-            ++(*this);
+            _index_lin = _size_lin = 0;
+        }
+        else
+        {
+            _gridmap.BoundPosition(bottom_left);
+            _gridmap.BoundPosition(top_right);
+
+            _gridmap.GetIndexFromPosition(bottom_left, _start_index);
+            _gridmap.GetIndexFromPosition(top_right, _end_index);
+            _gridmap.UnwrapIndex(_start_index);
+            _gridmap.UnwrapIndex(_end_index);
+            _size = (_end_index - _start_index) + 1;
+            assert(_size(0) > 0 && _size(1) > 0);
+            _size_lin = _size(0) * _size(1);
+
+            _index_lin = 0;
+            _index = _start_index;
+            _gridmap.WrapIndex(_index);
         }
     }
 
@@ -109,6 +106,9 @@ public:
     GridMapBoxIterator &operator++()
     {
         _index_lin++;
+        if (IsEnd())
+            return *this;
+
         _index(0) = _index_lin / _size(1);
         _index(1) = _index_lin % _size(1);
         _index += _start_index;

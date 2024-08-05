@@ -12,11 +12,12 @@
 
 #define DTCORE_DTLOG_MT
 
-namespace dtCore {
+namespace dt
+{
 
 using log_clock = ::std::chrono::system_clock;
 
-class dtLog 
+class Log
 {
 private:
     static std::string annotate_filename_datetime(const std::string file_basename)
@@ -264,16 +265,16 @@ public:
 
 };
 
-} // namespace dtCore
+} // namespace dt
 
 /* Might cause macro redefinition errors, you can comment them out if needed */
 // #define INFO info
 // #define WARNING warn
 // #define ERROR err
 
-// dtLog to spdlog converter
-#define LOG_S(log_level) dtCore::dtLog::LogStream(spdlog::level::log_level)
-#define LOG_U_S(log_name, log_level) dtCore::dtLog::NamedLogStream(#log_name, spdlog::level::log_level)
+// dt::Log to spdlog converter
+#define LOG_S(log_level) dt::Log::LogStream(spdlog::level::log_level)
+#define LOG_U_S(log_name, log_level) dt::Log::NamedLogStream(#log_name, spdlog::level::log_level)
 
 // log to default logger
 #define LOG(log_level) LOG_S(log_level)
@@ -285,11 +286,11 @@ std::function<double(void)> gen = [] (void) -> double {
 };
 
 int main() {
-    using namespace dtCore;
+    using namespace dt;
 
-    dtLog::Initialize("test_spdlog_stream");
-    //dtLog::Initialize("test_spdlog_stream", "logs/test_spdlog_stream.txt");
-    dtLog::SetLogLevel(dtLog::LogLevel::trace);
+    dt::Log::Initialize("test_spdlog_stream");
+    //dt::Log::Initialize("test_spdlog_stream", "logs/test_spdlog_stream.txt");
+    dt::Log::SetLogLevel(dt::Log::LogLevel::trace);
 
     // log to default logger
     LOG(trace) << "This is a trace message: " << 42;
@@ -303,9 +304,9 @@ int main() {
     LOG(err).format("This is from format string(err): {0:} {1:}", 1.234, 90); 
 
     // User custom log
-    dtLog::Create("my_log", "logs/test_spdlog_stream_mylog.txt");
-    dtLog::SetLogLevel("my_log", dtLog::LogLevel::trace);
-    // dtLog::SetLogPattern("my_log", dtLog::LogPatternFlag::epoch);
+    dt::Log::Create("my_log", "logs/test_spdlog_stream_mylog.txt");
+    dt::Log::SetLogLevel("my_log", dt::Log::LogLevel::trace);
+    // dt::Log::SetLogPattern("my_log", dt::Log::LogPatternFlag::epoch);
     LOG_U(my_log, trace) << "This is a user trace message: " << 42;
     LOG_U(my_log, debug) << "This is a user debug message: " << 42;
     LOG_U(my_log, info) << "This is a user info message: " << 42;

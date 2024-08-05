@@ -30,16 +30,40 @@ public:
     GridMapCircleIterator(GridMapType &gridmap, const typename GridMapType::Position center, const typename GridMapType::ValueType radius)
         : _gridmap(gridmap), _center(center), _radius(radius)
     {
-        _gridmap.GetIndexFromPosition(_center, _center_index);
-        _gridmap.UnwrapIndex(_center_index);
-        _start_index = _center_index - (int)(_radius / gridmap.resolution()) - 1;
-        _end_index = _center_index + (int)(_radius / gridmap.resolution()) + 1;
-        _size = (_end_index - _start_index) + 1;
-        assert(_size(0) > 0 && _size(1) > 0);
-        _size_lin = _size(0) * _size(1);
-        _index_lin = 0;
-        _index = _start_index;
-        _gridmap.WrapIndex(_index);
+        typename GridMapType::Position bottom_left = center - radius;
+        typename GridMapType::Position top_right = center + radius;
+
+        if (top_right(0) < _gridmap.GetLeft() ||
+            top_right(1) < _gridmap.GetBottom() ||
+            bottom_left(0) >= _gridmap.GetRight() ||
+            bottom_left(1) >= _gridmap.GetTop())
+        {
+            _index_lin = _size_lin = 0;
+        }
+        else
+        {
+            _gridmap.BoundPosition(bottom_left);
+            _gridmap.BoundPosition(top_right);
+
+            _gridmap.GetIndexFromPosition(bottom_left, _start_index);
+            _gridmap.GetIndexFromPosition(top_right, _end_index);
+            _gridmap.UnwrapIndex(_start_index);
+            _gridmap.UnwrapIndex(_end_index);
+            _size = (_end_index - _start_index) + 1;
+            assert(_size(0) > 0 && _size(1) > 0);
+            _size_lin = _size(0) * _size(1);
+
+            _index_lin = 0;
+            _index = _start_index;
+            _gridmap.WrapIndex(_index);
+
+            // search the first valid index which is in the given circle
+            typename GridMapType::Position cell_center;
+            _gridmap.GetPositionFromIndex(_index, cell_center);
+            typename GridMapType::ValueType _cell_distance = sqrt((_center - cell_center).Inner(_center - cell_center));
+            if (_cell_distance > _radius)
+                ++(*this);
+        }
 
         // search the first valid index which is in the given circle
         while (!IsEnd())
@@ -48,7 +72,7 @@ public:
             {
                 typename GridMapType::Position cell_center;
                 _gridmap.GetPositionFromIndex(_index, cell_center);
-                typename GridMapType::ValueType _cell_distance = sqrt((center - cell_center).dot(center - cell_center));
+                typename GridMapType::ValueType _cell_distance = sqrt((center - cell_center).Inner(center - cell_center));
                 if (_cell_distance <= _radius)
                     break;
             }
@@ -65,7 +89,6 @@ public:
         this->_start_index = ref._start_index;
         this->_end_index = ref._end_index;
         this->_center = ref._center;
-        this->_center_index = ref._center_index;
         this->_radius = ref._radius;
         this->_size_lin = ref._size_lin;
         this->_index_lin = ref._index_lin;
@@ -80,10 +103,10 @@ public:
     }
     GridMapCircleIterator &operator++()
     {
+        _index_lin++;
         if (IsEnd())
             return *this;
 
-        _index_lin++;
         _index(0) = _index_lin / _size(1);
         _index(1) = _index_lin % _size(1);
         _index += _start_index;
@@ -93,7 +116,7 @@ public:
         {
             typename GridMapType::Position cell_center;
             _gridmap.GetPositionFromIndex(_index, cell_center);
-            typename GridMapType::ValueType _cell_distance = sqrt((_center - cell_center).dot(_center - cell_center));
+            typename GridMapType::ValueType _cell_distance = sqrt((_center - cell_center).Inner(_center - cell_center));
             if (_cell_distance <= _radius)
                 return *this;
         }
@@ -131,7 +154,6 @@ private:
     typename GridMapType::Index _end_index;
 
     typename GridMapType::Position _center;
-    typename GridMapType::Index _center_index;
     typename GridMapType::ValueType _radius;
     uint16_t _size_lin;
     uint16_t _index_lin;

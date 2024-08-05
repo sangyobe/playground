@@ -28,25 +28,13 @@ void testIterator(LocalGridMap &gridmap)
     std::cout << std::endl;
 }
 
-void testBoxIterator(LocalGridMap &gridmap)
+void testBoxIterator(LocalGridMap &gridmap, LocalGridMap::Position center, LocalGridMap::Size rect)
 {
     std::cout << "----------------------------------------------------------" << std::endl;
     std::cout << "Iterate cells inside a given box shape..." << std::endl;
     std::cout << std::endl;
 
-    LocalGridMap::Index boxStart, boxEnd;
-    LocalGridMap::Position boxStartPosition, boxEndPosition;
-    boxStartPosition(0) = -0.35;
-    boxStartPosition(1) = 0.15;
-    boxEndPosition(0) = -0.15;
-    boxEndPosition(1) = 0.35;
-    gridmap.GetIndexFromPosition(boxStartPosition, boxStart);
-    gridmap.GetIndexFromPosition(boxEndPosition, boxEnd);
-    // boxStart(0) = 7;
-    // boxStart(1) = 2;
-    // boxEnd(0) = 9;
-    // boxEnd(1) = 3;
-    LocalGridMapBoxIterator itr(gridmap, boxStart, boxEnd);
+    LocalGridMapBoxIterator itr(gridmap, center, rect);
     while (!itr.IsEnd())
     {
         std::cout << (*itr)(0) << ", " << (*itr)(1) << std::endl;
@@ -56,18 +44,13 @@ void testBoxIterator(LocalGridMap &gridmap)
     std::cout << std::endl;
 }
 
-void testCircleIterator(LocalGridMap &gridmap)
+void testCircleIterator(LocalGridMap &gridmap, LocalGridMap::Position center, LocalGridMap::ValueType radius)
 {
     std::cout << "----------------------------------------------------------" << std::endl;
     std::cout << "Iterate cells inside a given circle shape..." << std::endl;
     std::cout << std::endl;
 
-    LocalGridMap::Position circleCenter;
-    LocalGridMap::ValueType circleRadius;
-    circleCenter(0) = 0.25;
-    circleCenter(1) = -0.25;
-    circleRadius = 0.25;
-    LocalGridMapCircleIterator itr(gridmap, circleCenter, circleRadius);
+    LocalGridMapCircleIterator itr(gridmap, center, radius);
     while (!itr.IsEnd())
     {
         std::cout << (*itr)(0) << ", " << (*itr)(1) << std::endl;
@@ -100,12 +83,23 @@ int main()
     // testIterator(gridmap);
 
     // test box iterator
-    testBoxIterator(gridmap);
+    LocalGridMap::Position boxCenter;
+    boxCenter(0) = 0.0;
+    boxCenter(1) = 0.5;
+    LocalGridMap::Size boxRect;
+    boxRect(0) = 0.1 - 1e-6;
+    boxRect(1) = 0.1 - 1e-6;
+    testBoxIterator(gridmap, boxCenter, boxRect);
 
     // test circle iterator
-    testCircleIterator(gridmap);
+    LocalGridMap::Position circleCenter;
+    circleCenter(0) = 0.5;
+    circleCenter(1) = 0.5;
+    LocalGridMap::ValueType circleRadius;
+    circleRadius = 0.10;
+    testCircleIterator(gridmap, circleCenter, circleRadius);
 
-    std::atomic<bool> bRun{true};
+    std::atomic<bool> bRun{false};
     LocalGridMap::Position center;
     center.SetFill(0.0);
     while (bRun.load())
