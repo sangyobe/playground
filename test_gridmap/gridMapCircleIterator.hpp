@@ -33,10 +33,10 @@ public:
         typename GridMapType::Position bottom_left = center - radius;
         typename GridMapType::Position top_right = center + radius;
 
-        if (top_right(0) < _gridmap.GetLeft() ||
-            top_right(1) < _gridmap.GetBottom() ||
-            bottom_left(0) >= _gridmap.GetRight() ||
-            bottom_left(1) >= _gridmap.GetTop())
+        if (bottom_left(0) < _gridmap.GetLeft() ||
+            bottom_left(1) < _gridmap.GetBottom() ||
+            top_right(0) >= _gridmap.GetRight() ||
+            top_right(1) >= _gridmap.GetTop())
         {
             _index_lin = _size_lin = 0;
         }
@@ -57,26 +57,7 @@ public:
             _index = _start_index;
             _gridmap.WrapIndex(_index);
 
-            // search the first valid index which is in the given circle
-            typename GridMapType::Position cell_center;
-            _gridmap.GetPositionFromIndex(_index, cell_center);
-            typename GridMapType::ValueType _cell_distance = sqrt((_center - cell_center).Inner(_center - cell_center));
-            if (_cell_distance > _radius)
-                ++(*this);
-        }
-
-        // search the first valid index which is in the given circle
-        while (!IsEnd())
-        {
-            if (_gridmap.IsValid(_index))
-            {
-                typename GridMapType::Position cell_center;
-                _gridmap.GetPositionFromIndex(_index, cell_center);
-                typename GridMapType::ValueType _cell_distance = sqrt((center - cell_center).Inner(center - cell_center));
-                if (_cell_distance <= _radius)
-                    break;
-            }
-            ++(*this);
+            Reset();
         }
     }
 
@@ -96,6 +77,30 @@ public:
 
     // destructor
     ~GridMapCircleIterator() {}
+
+    /**
+     * Reset iterator to its start position.
+     */
+    void Reset()
+    {
+        _index_lin = 0;
+        _index = _start_index;
+        _gridmap.WrapIndex(_index);
+
+        // search the first valid index which is in the given circle
+        while (!IsEnd())
+        {
+            if (_gridmap.IsValid(_index))
+            {
+                typename GridMapType::Position cell_center;
+                _gridmap.GetPositionFromIndex(_index, cell_center);
+                typename GridMapType::ValueType cell_distance = sqrt((_center - cell_center).Inner(_center - cell_center));
+                if (cell_distance <= _radius)
+                    break;
+            }
+            ++(*this);
+        }
+    }
 
     typename GridMapType::Index &operator*()
     {

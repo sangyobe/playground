@@ -26,7 +26,7 @@ public:
      * @param gridmap
      * @param start Wrapped start(left-bottom) index of the box sub-region.
      * @param end Wrapped end(right-top) index of the box sub-region.
-    */
+     */
     GridMapBoxIterator(GridMapType &gridmap, const typename GridMapType::Index start, const typename GridMapType::Index end)
         : _gridmap(gridmap), _start_index(start), _end_index(end)
     {
@@ -36,9 +36,7 @@ public:
         assert(_size(0) > 0 && _size(1) > 0);
         _size_lin = _size(0) * _size(1);
 
-        _index_lin = 0;
-        _index = _start_index;
-        _gridmap.WrapIndex(_index);
+        Reset();
     }
 
     /**
@@ -53,10 +51,10 @@ public:
         typename GridMapType::Position bottom_left = center - size * 0.5;
         typename GridMapType::Position top_right = center + size * 0.5;
 
-        if (top_right(0) < _gridmap.GetLeft() ||
-            top_right(1) < _gridmap.GetBottom() ||
-            bottom_left(0) >= _gridmap.GetRight() ||
-            bottom_left(1) >= _gridmap.GetTop())
+        if (bottom_left(0) < _gridmap.GetLeft() ||
+            bottom_left(1) < _gridmap.GetBottom() ||
+            top_right(0) >= _gridmap.GetRight() ||
+            top_right(1) >= _gridmap.GetTop())
         {
             _index_lin = _size_lin = 0;
         }
@@ -73,9 +71,7 @@ public:
             assert(_size(0) > 0 && _size(1) > 0);
             _size_lin = _size(0) * _size(1);
 
-            _index_lin = 0;
-            _index = _start_index;
-            _gridmap.WrapIndex(_index);
+            Reset();
         }
     }
 
@@ -88,11 +84,21 @@ public:
         this->_start_index = ref._start_index;
         this->_end_index = ref._end_index;
         this->_size_lin = ref._size_lin;
-        this->_index_lin = ref = _index_lin;
+        this->_index_lin = ref._index_lin;
     }
 
     // destructor
     ~GridMapBoxIterator() {}
+
+    /**
+     * Reset iterator to its start position.
+     */
+    void Reset()
+    {
+        _index_lin = 0;
+        _index = _start_index;
+        _gridmap.WrapIndex(_index);
+    }
 
     /**
      * Get wrapped index.

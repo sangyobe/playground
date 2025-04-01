@@ -10,10 +10,7 @@
 #ifndef DTCONTROL_GRIDMAP_H_
 #define DTCONTROL_GRIDMAP_H_
 
-// #include "algorithm/robotMacro.h"
-#define DOF2 (2)
-#define DOF3 (3)
-typedef double SYSREAL;
+#include "algorithm/robotMacro.h"
 #include <cassert>
 #include <cmath>
 #include <dtCore/type.h>

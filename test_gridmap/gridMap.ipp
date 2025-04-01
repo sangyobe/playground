@@ -1,14 +1,14 @@
-// #include "algorithm/robotParam.h"
+#include "algorithm/robotParam.h"
 namespace dtControl
 {
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
-const m_type GridMap<m_col, m_row, m_type>::NAN_VAL = 0.0; // NAN;
+const m_type GridMap<m_col, m_row, m_type>::NAN_VAL = NAN; // 0.0;
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 GridMap<m_col, m_row, m_type>::GridMap()
 {
-    // const dt::Utils::Conf &conf = RobotParam::Get().conf();
+    const dt::Utils::Conf &conf = RobotParam::Get().conf();
     this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
     this->_size(0) = m_col * _resolution;
     this->_size(1) = m_row * _resolution;
@@ -26,12 +26,13 @@ GridMap<m_col, m_row, m_type>::GridMap()
 
     // add some default layers
     AddLayer("hmap");
+    AddLayer("footstep_costmap");
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 GridMap<m_col, m_row, m_type>::GridMap(const std::vector<std::string> layerNames)
 {
-    // const dt::Utils::Conf &conf = RobotParam::Get().conf();
+    const dt::Utils::Conf &conf = RobotParam::Get().conf();
     this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
     this->_size(0) = m_col * _resolution;
     this->_size(1) = m_row * _resolution;
@@ -54,7 +55,7 @@ GridMap<m_col, m_row, m_type>::GridMap(const std::vector<std::string> layerNames
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 GridMap<m_col, m_row, m_type>::GridMap(const std::vector<std::string> layerNames, const Index centerIndex)
 {
-    // const dt::Utils::Conf &conf = RobotParam::Get().conf();
+    const dt::Utils::Conf &conf = RobotParam::Get().conf();
     this->_resolution = 0.05; //conf["gridmap"]["resolution"].toDouble();
     this->_size(0) = m_col * _resolution;
     this->_size(1) = m_row * _resolution;
@@ -101,25 +102,25 @@ m_type GridMap<m_col, m_row, m_type>::GetHeight() const
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 m_type GridMap<m_col, m_row, m_type>::GetLeft() const
 {
-    return this->_bottomLeftPosition(0);
+    return (this->_bottomLeftPosition(0) + this->_r(0));
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 m_type GridMap<m_col, m_row, m_type>::GetRight() const
 {
-    return this->_topRightPosition(0);
+    return (this->_topRightPosition(0) + this->_r(0));
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 m_type GridMap<m_col, m_row, m_type>::GetBottom() const
 {
-    return this->_bottomLeftPosition(1);
+    return (this->_bottomLeftPosition(1) + this->_r(1));
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>
 m_type GridMap<m_col, m_row, m_type>::GetTop() const
 {
-    return this->_topRightPosition(1);
+    return (this->_topRightPosition(1) + this->_r(1));
 }
 
 template <uint16_t m_col, uint16_t m_row, typename m_type>

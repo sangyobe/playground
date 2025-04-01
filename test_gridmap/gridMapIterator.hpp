@@ -25,8 +25,7 @@ public:
         _size(0) = gridmap.col();
         _size(1) = gridmap.row();
         _size_lin = _size(0) * _size(1);
-        _index.SetZero();
-        _index_lin = 0;
+        Reset();
     }
 
     // copy constructor
@@ -34,13 +33,22 @@ public:
         : _gridmap(ref._gridmap)
     {
         this->_size = ref._size;
-        this->_index = ref._index;
         this->_size_lin = ref._size_lin;
-        this->_index_lin = ref = _index_lin;
+        this->_index = ref._index;
+        this->_index_lin = ref._index_lin;
     }
 
     // destructor
     ~GridMapIterator() {}
+
+    /**
+     * Reset iterator to its start position.
+     */
+    void Reset()
+    {
+        _index.SetZero();
+        _index_lin = 0;
+    }
 
     typename GridMapType::Index &operator*()
     {

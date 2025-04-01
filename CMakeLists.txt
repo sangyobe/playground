@@ -47,9 +47,8 @@ add_subdirectory(third_party/spdlog)
 # set(YAML_CPP_INSTALL ON)
 add_subdirectory(third_party/yaml-cpp)
 
-set(BUILD_TESTING OFF) # disable testing for glog and capnproto
-add_subdirectory(third_party/glog)
-
+# set(BUILD_TESTING OFF) # disable testing for glog and capnproto
+# add_subdirectory(third_party/glog)
 # add_subdirectory(third_party/capnproto)
 
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include")

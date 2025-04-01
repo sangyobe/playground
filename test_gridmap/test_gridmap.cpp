@@ -5,8 +5,8 @@
 #include <atomic>
 
 // using namespace dtControl;
-#define GRID_SIZE_X 20
-#define GRID_SIZE_Y 20
+#define GRID_SIZE_X 120
+#define GRID_SIZE_Y 120
 typedef dtControl::GridMap<GRID_SIZE_X, GRID_SIZE_Y, SYSREAL> LocalGridMap;
 typedef dtControl::GridMapIterator<LocalGridMap> LocalGridMapIterator;
 typedef dtControl::GridMapBoxIterator<LocalGridMap> LocalGridMapBoxIterator;
@@ -79,6 +79,24 @@ int main()
         ++gridMapItr;
     }
 
+    //
+    LocalGridMap::Position r = gridmap.GetSize() * (-0.5);
+    gridmap.SetMapDisplacement(r);
+
+    LocalGridMap::Position center;
+    center(0) = -0.291;
+    center(1) = -0.179;
+    LocalGridMap::Size rect;
+    double searchRange = 0.1;
+    rect << searchRange, searchRange;
+    LocalGridMapBoxIterator cellItr(gridmap, center, rect);
+    for (; false == cellItr.IsEnd(); cellItr++)
+    {
+        std::cout << (*cellItr)(0) << ", " << (*cellItr)(1) << std::endl;
+    }
+
+    return 0;
+
     // test iterator
     // testIterator(gridmap);
 
@@ -100,8 +118,8 @@ int main()
     testCircleIterator(gridmap, circleCenter, circleRadius);
 
     std::atomic<bool> bRun{false};
-    LocalGridMap::Position center;
-    center.SetFill(0.0);
+    LocalGridMap::Position centerPos;
+    centerPos.SetFill(0.0);
     while (bRun.load())
     {
         cout << "(type \'q\' to quit) >\n";
@@ -117,26 +135,26 @@ int main()
         }
         else if (cmd == "w")
         {
-            center(1) += 0.05;
-            gridmap.SetCenterPosition(center);
+            centerPos(1) += 0.05;
+            gridmap.SetCenterPosition(centerPos);
             gridmap.Print();
         }
         else if (cmd == "x")
         {
-            center(1) -= 0.05;
-            gridmap.SetCenterPosition(center);
+            centerPos(1) -= 0.05;
+            gridmap.SetCenterPosition(centerPos);
             gridmap.Print();
         }
         else if (cmd == "d")
         {
-            center(0) += 0.05;
-            gridmap.SetCenterPosition(center);
+            centerPos(0) += 0.05;
+            gridmap.SetCenterPosition(centerPos);
             gridmap.Print();
         }
         else if (cmd == "a")
         {
-            center(0) -= 0.05;
-            gridmap.SetCenterPosition(center);
+            centerPos(0) -= 0.05;
+            gridmap.SetCenterPosition(centerPos);
             gridmap.Print();
         }
     }
